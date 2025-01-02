@@ -8,18 +8,18 @@ let lastTokenCache = '';
 const intervalTime = 300000; // 5 minutes in milliseconds
 let countdown = intervalTime / 1000; // Countdown in seconds
 
-// Function to check for changes in token_cache.json
+// Function to check for changes in minfile.json
 function checkForChanges() {
-    fs.readFile('token_cache.json', 'utf8', (err, data) => {
+    fs.readFile('minfile.json', 'utf8', (err, data) => {
         if (err) {
-            console.error('Error reading token_cache.json:', err);
+            console.error('Error reading minfile.json:', err);
             return;
         }
 
         // Check if the content has changed
         if (data !== lastTokenCache) {
             lastTokenCache = data; // Update the last known content
-            console.log('token_cache.json has changed. Executing command...');
+            console.log('minfile.json has changed. Executing command...');
 
             // Execute your shell command here
             exec('your-command-here', (error, stdout, stderr) => {
