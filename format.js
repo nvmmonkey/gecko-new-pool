@@ -19,10 +19,10 @@ function formatData() {
                 token.quote_token_id
             ]))]; // Use Set to remove duplicates
 
-            // Read the existing token_cache.json file
-            fs.readFile('token_cache.json', 'utf8', (err, existingData) => {
+            // Read the existing minfile.json file
+            fs.readFile('minfile.json', 'utf8', (err, existingData) => {
                 if (err && err.code !== 'ENOENT') { // ENOENT means file does not exist
-                    console.error('Error reading token_cache.json:', err);
+                    console.error('Error reading minfile.json:', err);
                     return reject(err);
                 }
 
@@ -32,13 +32,13 @@ function formatData() {
                 // Combine existing tokens with new formatted output
                 const combinedTokens = [...new Set([...existingTokens, ...formattedOutput])]; // Remove duplicates
 
-                // Write the combined data back to token_cache.json
+                // Write the combined data back to minfile.json
                 fs.writeFile('minfile.json', JSON.stringify(combinedTokens, null, 2), (err) => {
                     if (err) {
                         console.error('Error writing to file:', err);
                         return reject(err);
                     } else {
-                        console.log('Data successfully appended to token_cache.json');
+                        console.log('Data successfully appended to minfile.json');
                         resolve(); // Resolve the promise
                     }
                 });
