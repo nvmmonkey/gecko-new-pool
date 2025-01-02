@@ -1,0 +1,122 @@
+[
+  {
+    "base_token_id": "HoZsDYnsna4LJJoQE7yqzrRTSj5eDhe4hFecqmawMeRW",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "TRUST / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "8i51XNNpGaKaj4G4nDdmQh95v4FKAxw8mhtaRoKd9tE8",
+    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "TETSUO / USDC",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "HozPPiJYC7aRJ4EEU4idiVUyCx8xfatsCS1qHpUGpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "GEMSYNC / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "711dXQuasDQGVRgprRjhRMV6RwDn9xfZZhyB7ubtoi3K",
+    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "EGG / USDC",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "DUNA / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "AxDKAyDsC7p8C5MeDFX6FKV2MPCSGwzkRfGY2qZZpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "NOVA / SOL",
+    "dex": "orca"
+  },
+  {
+    "base_token_id": "FKdG7cQ7K3YbxYzpXjM4KcfaxtdZ3UBocQCHXnKeF7d3",
+    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "CORE / USDC",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "FBgM1MB597FWGJP6cp4PqinXwWYt2xCspZnf9rbJq7wj",
+    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "DUNA / USDC",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "2wUGjvMqXusgfzYP3Vj149bSM9MwTPLS4maxkdGfpump",
+    "quote_token_id": "7RQuXBYpJv4MnGBBjnf6X4qJVQnemR7HpAuzJCQapump",
+    "name": "SOLENG / SHIBORI",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "Gst1mHM4sqEgUeZVNLRaDhVZBKngsnpch4abiVyGpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "$CRAB / SOL",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+    "quote_token_id": "BZLbGTNCSFfoth2GYDtwr7e4imWzpR5jqcUuGEwr646K",
+    "name": "cbBTC / IO",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "7UXqrR9MwLpNGZzi69bBVpX51GF739o3JWELXBcD8t5y",
+    "quote_token_id": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "name": "HKD / USDT",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "DJw9fmUz6woCm7MXgGBho5K1hK3HViBbrnPYnQYAgphD",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "EGR / SOL",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "62mETtNRaVY5iNsJr5YexsbVg1uyyoLwtoWLSnjApump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "Stoic / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "3D9jsxXbCbDogmcTaEfxWeVcYqoryGoPsBCYfffJpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "PUSHEEN / SOL",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "DUNA / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "Fbse7Rv85beJFKbTyFVpe3vTZMmMGfKqFPwni8FYx6iy",
+    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "BUET / USDC",
+    "dex": "raydium-clmm"
+  },
+  {
+    "base_token_id": "EsP4kJfKUDLfX274WoBSiiEy74Sh4tZKUCDjfULHpump",
+    "quote_token_id": "GtDZKAqvMZMnti46ZewMiXCa4oXF4bZxwQPoKzXPFxZn",
+    "name": "FRIC / nub",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "DUNA / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump",
+    "quote_token_id": "CNKEXXypBC66cZ111Mg3JUxyczXS1E9T6MWEufzQZVMo",
+    "name": "DUNA / REX",
+    "dex": "meteora"
+  }
+]
