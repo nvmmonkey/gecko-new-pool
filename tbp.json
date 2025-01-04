@@ -1,104 +1,98 @@
 [
   {
-    "base_token_id": "B6fmdKB7FJayAA1VwGyXkXRV6A4ChP8VuNAb74k6MVSS",
+    "base_token_id": "E5Cu1on9Mq7Vb6kCKZgivuaWqt5VrTiK3SF5sTeZpump",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "ORACLE / SOL",
+    "name": "OA / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "AC5jVihvjYbdeVzj1xwM4bhxFX3GLcXc2RLphbRHT6Vr",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "FOMO / SOL",
+    "dex": "orca"
+  },
+  {
+    "base_token_id": "5XUUN5z1yBPEwoLztu4qMenmFe6GQnZptBFsnFnEpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "WAVE / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "GnVixxZ4Gj4yd1t1DdrbcEug7U4NY3YytS6CtZiFpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "Oski / SOL",
     "dex": "raydium-clmm"
   },
   {
-    "base_token_id": "8ea6esZ3JeuNMARSPJPpNzFyBQBVn39PKhXPgTUD2iUy",
-    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "name": "T3AI / USDC",
+    "base_token_id": "3j1inmkWfm4PdpvaZEo4sky1ncPkmnwoGgpda6Pmpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "QOAI / SOL",
+    "dex": "meteora"
+  },
+  {
+    "base_token_id": "7B2hMgGH7dzZB4dDkqLVUxgzeZE58e8iqeFBtReNpump",
+    "quote_token_id": "So11111111111111111111111111111111111111112",
+    "name": "DOGIUS / SOL",
     "dex": "raydium-clmm"
   },
   {
-    "base_token_id": "HozPPiJYC7aRJ4EEU4idiVUyCx8xfatsCS1qHpUGpump",
+    "base_token_id": "FtfFemwafSCfVTBWLsjWx9Lr87ojH6o7QkY9m5KZpump",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "GEMSYNC / SOL",
+    "name": "BOOM / SOL",
     "dex": "meteora"
   },
   {
-    "base_token_id": "4Bo121MZ4C16XEsz47MbmuyEx1CFXepUqLFDNeF9pump",
+    "base_token_id": "9McvH6w97oewLmPxqQEoHUAv3u5iYMyQ9AeZZhguYf1T",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "CRUZE / SOL",
+    "name": "Anon / SOL",
     "dex": "meteora"
   },
   {
-    "base_token_id": "GorvUUSkJGSzJUebM5W6berUkZ5pG8nmnn7tmk74pump",
-    "quote_token_id": "62mETtNRaVY5iNsJr5YexsbVg1uyyoLwtoWLSnjApump",
-    "name": "ZAILGO / Stoic",
-    "dex": "meteora"
-  },
-  {
-    "base_token_id": "3S9jYXfohb2VVf9Wm7Mq5SgV8SF21fFnFcMcgc96zJZJ",
-    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "name": "COOKIE / USDC",
+    "base_token_id": "8T988C2a8YNNbppjjd1uYUpmDqE8hLee1tuNokuepump",
+    "quote_token_id": "FQ1tyso61AH1tzodyJfSwmzsD3GToybbRNoZxUBz21p8",
+    "name": "ALICE / vvaifu",
     "dex": "raydium-clmm"
   },
   {
-    "base_token_id": "4iizMdH35hjyYjuYgRvGyTAbDEpaKWRZt3dXgBv464nN",
+    "base_token_id": "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "SATOSHI / SOL",
-    "dex": "meteora"
+    "name": "GRASS / SOL",
+    "dex": "orca"
   },
   {
-    "base_token_id": "8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB",
-    "quote_token_id": "FLqmVrv6cp7icjobpRMQJMEyjF3kF84QmC4HXpySpump",
-    "name": "GME / BUCK",
-    "dex": "meteora"
+    "base_token_id": "39qibQxVzemuZTEvjSB7NePhw9WyyHdQCqP8xmBMpump",
+    "quote_token_id": "D2yYpusqN1EEUUPtLeSLgkcp8b7SgQtv2VRJHv4cDfd6",
+    "name": "MemesAI / PLEB",
+    "dex": "orca"
   },
   {
-    "base_token_id": "H2YC3R9EphGRBcHYEyv4nTfvrx4NVfR6AmHAkmv6hTei",
+    "base_token_id": "CVGS9h4shf9KrhzWJDWEQiwpbwYoRLv6sH8AtN9Cpump",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "Pharmai / SOL",
+    "name": "FARTHARD / SOL",
     "dex": "meteora"
   },
   {
-    "base_token_id": "9TZAUxgdu2ogD1eZYtb8aRZhPpVBTY1dp9jXgNd9pump",
-    "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "Ringa / SOL",
-    "dex": "meteora"
-  },
-  {
-    "base_token_id": "FFpnDZpehiZ3Ey167NpB4SKrPLweKCsbVKtuBgBnYwoo",
-    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "name": "DUNA / USDC",
+    "base_token_id": "43VWkd99HjqkhFTZbWBpMpRhjG469nWa7x7uEsgSH7We",
+    "quote_token_id": "CDgpSoqx7LVf8qTJe86JysqEX7W3VQpXrBwoY7VXpump",
+    "name": "STNK / LETHIMCOOK",
     "dex": "raydium-clmm"
   },
   {
-    "base_token_id": "HozPPiJYC7aRJ4EEU4idiVUyCx8xfatsCS1qHpUGpump",
+    "base_token_id": "HqTmHqe8Pr31g9fUzQPq7MQCkS1Gjt325hTJCAPipump",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "GEMSYNC / SOL",
+    "name": "PRISM / SOL",
     "dex": "meteora"
   },
   {
-    "base_token_id": "Am17SgVwo9yLi7J3oAbeGVnSbXYCtbcz6eDT6P7Apump",
+    "base_token_id": "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeCSxBSoWdp",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "SIMULA / SOL",
-    "dex": "raydium-clmm"
+    "name": "$michi / SOL",
+    "dex": "orca"
   },
   {
-    "base_token_id": "4BsE91MrbhEeJmWJ3ddX58hN4iAk8gXmvZv5JYUapump",
+    "base_token_id": "HqTmHqe8Pr31g9fUzQPq7MQCkS1Gjt325hTJCAPipump",
     "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "PLANT / SOL",
+    "name": "PRISM / SOL",
     "dex": "meteora"
-  },
-  {
-    "base_token_id": "7UZ1yoex9xTx9Lb95UwE8p5n8Qq7GVbEek4sYdTb875T",
-    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "name": "YOUNGDEV / USDC",
-    "dex": "raydium-clmm"
-  },
-  {
-    "base_token_id": "Am17SgVwo9yLi7J3oAbeGVnSbXYCtbcz6eDT6P7Apump",
-    "quote_token_id": "So11111111111111111111111111111111111111112",
-    "name": "SIMULA / SOL",
-    "dex": "meteora"
-  },
-  {
-    "base_token_id": "FFpnDZpehiZ3Ey167NpB4SKrPLweKCsbVKtuBgBnYwoo",
-    "quote_token_id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "name": "DUNA / USDC",
-    "dex": "raydium-clmm"
   }
 ]
