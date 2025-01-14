@@ -1,92 +1,192 @@
 const axios = require('axios');
 const fs = require('fs');
 
-// Function to fetch data from the API
-async function fetchData() {
-    const allPools = [];
-    const totalPages = 10; // Total pages to fetch
-    const pagesPerCall = 10; // Pages per call
-    const dexIdsToFilter = ["raydium", "fluxbeam", "meteora", "orca", "raydium-clmm", "dexlab"];
-    const filters = {
-        "raydium": true,
-        "fluxbeam": true,
-        "dexlab": true,
-        "meteora": false,
-        "orca": false,
-        "raydium-clmm": false,
-    };
-
-
-
-    for (let i = 0; i < totalPages; i += pagesPerCall) {
-        const promises = [];
-
-        // Create promises for each page to fetch
-        for (let j = 0; j < pagesPerCall; j++) {
-            const page = i + j + 1; // Page number (1-indexed)
-            if (page <= totalPages) {
-                promises.push(
-                    axios.get(`https://api.geckoterminal.com/api/v2/networks/solana/new_pools?page=${page}`, {
-                        headers: {
-                            'accept': 'application/json'
-                        }
-                    })
-                );
-            }
-        }
-
-        // Wait for all promises to resolve
-        const responses = await Promise.all(promises);
-
-        // Collect data from responses
-        responses.forEach(response => {
-            const data = response.data.data; // Access the new data structure
-            allPools.push(...data);
-        });
+const CONFIG = {
+    // Rate Limiting
+    RATE_LIMIT: 30,
+    INTERVAL: 60000,
+    RETRY_ATTEMPTS: 3,
+    
+    // Pagination
+    TOTAL_PAGES: 10,
+    
+    // Filters
+    FILTERS: {
+        // Price & Value Filters
+        MIN_BASE_TOKEN_PRICE_USD: 0,
+        MIN_RESERVE_USD: 0,
+        MIN_FDV_USD: 0,
+        
+        // Volume Filters
+        MIN_24H_VOLUME: 0,
+        MIN_24H_TRANSACTIONS: 0,
+        MIN_24H_BUYERS: 0,
+        
+        // Price Change Filters
+        MAX_PRICE_CHANGE_24H: 100,
+        
+        // DEX Filters
+        DEX_FILTERS: {
+            "raydium": true,
+            "fluxbeam": true,
+            "dexlab": true,
+            "meteora": false,
+            "orca": false,
+            "raydium-clmm": false
+        },
+        
+        // Token Filters
+        QUOTE_TOKENS: []
+    },
+    
+    // Output Files
+    OUTPUT_FILES: {
+        POOLS: 'solana_pools.json',
+        DEX_COUNT: 'dex_count.json',
+        DEX_NAMES: 'dex_name.json'
     }
+};
 
-    // Use allPools directly without filtering for Solana network
-    const filteredSolanaPools = allPools.filter(pool => {
-        const dexId = pool.relationships.dex.data.id;
-        const fdvUsd = parseFloat(pool.attributes.fdv_usd); // Convert fdv_usd to a number
-        return fdvUsd > 500000 &&  !filters[dexId]; // Only include pools not 
-       
-    });
+const DELAY_BETWEEN_REQUESTS = CONFIG.INTERVAL / CONFIG.RATE_LIMIT;
 
-    // Sort the filtered pools by creation time from latest to oldest
-    filteredSolanaPools.sort((a, b) => {
-        return new Date(b.attributes.pool_created_at) - new Date(a.attributes.pool_created_at);
-    });
-
-    // Write the filtered and sorted data to a JSON file
-    fs.writeFileSync('solana_pools.json', JSON.stringify(filteredSolanaPools, null, 2));
-    console.log('Filtered and sorted Solana pools data has been written to solana_pools.json');
-
-    // Collect unique "dex" IDs
-    const uniqueDexIds = new Set();
-    filteredSolanaPools.forEach(pool => {
-        const dexId = pool.relationships.dex.data.id; // Get the unique dex ID
-        uniqueDexIds.add(dexId);
-    });
-
-    const dexCount = uniqueDexIds.size;
-
-    // Convert the Set to an array for JSON output
-    const dexIdArray = Array.from(uniqueDexIds);
-
-    // Write the count of unique "dex" types to a new JSON file
-    fs.writeFileSync('dex_count.json', JSON.stringify({ dexCount }, null, 2));
-
-    // Write unique "dex" IDs to a new JSON file
-    fs.writeFileSync('dex_name.json', JSON.stringify(dexIdArray, null, 2));
-
-    console.log('Unique dex types count has been written to dex_count.json');
-    console.log('Unique dex IDs have been written to dex_name.json');
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Call the fetchData function
-fetchData().catch(error => console.error('Error:', error));
+async function fetchWithRetry(url, headers, retries = CONFIG.RETRY_ATTEMPTS) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await axios.get(url, { headers });
+            return response;
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            if (error.response?.status === 429) {
+                await sleep(CONFIG.INTERVAL);
+            } else {
+                await sleep(1000 * (i + 1));
+            }
+        }
+    }
+}
 
+async function processPageData(pageData) {
+    return pageData.filter(pool => {
+        const attributes = pool.attributes;
+        const dexId = pool.relationships.dex.data.id;
+        const quoteTokenId = pool.relationships.quote_token.data.id;
+        
+        return (
+            parseFloat(attributes.fdv_usd) > CONFIG.FILTERS.MIN_FDV_USD &&
+            !CONFIG.FILTERS.DEX_FILTERS[dexId] &&
+            parseFloat(attributes.base_token_price_usd) > CONFIG.FILTERS.MIN_BASE_TOKEN_PRICE_USD &&
+            parseFloat(attributes.reserve_in_usd) > CONFIG.FILTERS.MIN_RESERVE_USD &&
+            parseFloat(attributes.volume_usd.h24) > CONFIG.FILTERS.MIN_24H_VOLUME &&
+            (attributes.transactions.h24.buys + attributes.transactions.h24.sells) > CONFIG.FILTERS.MIN_24H_TRANSACTIONS &&
+            attributes.transactions.h24.buyers > CONFIG.FILTERS.MIN_24H_BUYERS &&
+            Math.abs(parseFloat(attributes.price_change_percentage.h24)) < CONFIG.FILTERS.MAX_PRICE_CHANGE_24H &&
+            (CONFIG.FILTERS.QUOTE_TOKENS.length === 0 || CONFIG.FILTERS.QUOTE_TOKENS.includes(quoteTokenId))
+        );
+    });
+}
 
-// Export the fetchData function
+async function fetchData(onPageComplete) {
+    let requestCount = 0;
+    let lastRequestTime = Date.now();
+    let allPoolsData = [];
+
+    try {
+        if (fs.existsSync(CONFIG.OUTPUT_FILES.POOLS)) {
+            const existingData = JSON.parse(fs.readFileSync(CONFIG.OUTPUT_FILES.POOLS, 'utf8'));
+            allPoolsData = Array.isArray(existingData) ? existingData : [];
+            console.log(`Loaded ${allPoolsData.length} existing pools`);
+        }
+    } catch (error) {
+        console.warn('No existing pools data found or error reading file:', error.message);
+    }
+
+    for (let page = 1; page <= CONFIG.TOTAL_PAGES; page++) {
+        try {
+            if (requestCount >= CONFIG.RATE_LIMIT) {
+                const waitTime = CONFIG.INTERVAL - (Date.now() - lastRequestTime);
+                if (waitTime > 0) await sleep(waitTime);
+                requestCount = 0;
+                lastRequestTime = Date.now();
+            }
+
+            console.log(`Fetching page ${page}/${CONFIG.TOTAL_PAGES}`);
+            
+            const response = await fetchWithRetry(
+                `https://api.geckoterminal.com/api/v2/networks/solana/new_pools?page=${page}`,
+                { 'accept': 'application/json' }
+            );
+
+            const filteredPageData = await processPageData(response.data.data);
+            
+            const timestampedPageData = filteredPageData.map(pool => ({
+                ...pool,
+                fetchTimestamp: new Date().toISOString()
+            }));
+
+            // Sort the new data by pool_created_at in descending order
+            const sortedPageData = timestampedPageData.sort((a, b) => {
+                const dateA = new Date(a.attributes.pool_created_at);
+                const dateB = new Date(b.attributes.pool_created_at);
+                return dateB - dateA;
+            });
+
+            // Merge and sort all data
+            allPoolsData = [...sortedPageData, ...allPoolsData].sort((a, b) => {
+                const dateA = new Date(a.attributes.pool_created_at);
+                const dateB = new Date(b.attributes.pool_created_at);
+                return dateB - dateA;
+            });
+
+            fs.writeFileSync(CONFIG.OUTPUT_FILES.POOLS, JSON.stringify(allPoolsData, null, 2));
+
+            const uniqueDexIds = new Set();
+            allPoolsData.forEach(pool => {
+                uniqueDexIds.add(pool.relationships.dex.data.id);
+            });
+
+            fs.writeFileSync(CONFIG.OUTPUT_FILES.DEX_COUNT, 
+                JSON.stringify({ dexCount: uniqueDexIds.size }, null, 2));
+            fs.writeFileSync(CONFIG.OUTPUT_FILES.DEX_NAMES, 
+                JSON.stringify(Array.from(uniqueDexIds), null, 2));
+
+            console.log(`Page ${page} processed and written. Total pools: ${allPoolsData.length}`);
+
+            if (onPageComplete) {
+                await onPageComplete({
+                    pageNumber: page,
+                    totalPages: CONFIG.TOTAL_PAGES,
+                    pageData: sortedPageData,
+                    totalPoolsCount: allPoolsData.length
+                });
+            }
+
+            requestCount++;
+            await sleep(DELAY_BETWEEN_REQUESTS);
+
+        } catch (error) {
+            console.error(`Error processing page ${page}:`, error.message);
+            await sleep(5000);
+        }
+    }
+
+    console.log('All pages processed successfully. Total pools collected:', allPoolsData.length);
+}
+
+if (require.main === module) {
+    const main = async () => {
+        try {
+            await fetchData();
+        } catch (error) {
+            console.error('Fatal error:', error.message);
+            process.exit(1);
+        }
+    };
+
+    main();
+}
+
 module.exports = fetchData;

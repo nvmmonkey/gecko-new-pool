@@ -5,21 +5,21 @@ const fs = require('fs');
 const { exec } = require('child_process');
 
 let lastTokenCache = '';
-const intervalTime = 300000; // 5 minutes in milliseconds
+const intervalTime = 300000-1000; // 5 minutes in milliseconds
 let countdown = intervalTime / 1000; // Countdown in seconds
 
 // Function to check for changes in minfile.json
 function checkForChanges() {
-    fs.readFile('minfile.json', 'utf8', (err, data) => {
+    fs.readFile('minfileAll.json', 'utf8', (err, data) => {
         if (err) {
-            console.error('Error reading minfile.json:', err);
+            console.error('Error reading minfileAll.json:', err);
             return;
         }
 
         // Check if the content has changed
         if (data !== lastTokenCache) {
             lastTokenCache = data; // Update the last known content
-            console.log('minfile.json has changed. Executing command...');
+            console.log('minfileAll.json has changed. Executing command...');
 
             // Execute your shell command here
             exec('your-command-here', (error, stdout, stderr) => {
