@@ -1,71 +1,55 @@
-const fetchData = require('./fetch');
-const extractData = require('./extract');
-const formatData = require('./format');
-const fs = require('fs');
-const { exec } = require('child_process');
+const readline = require('readline');
+const geckoMain = require('./gecko_main');
+const birdeyeMain = require('./main-birdeye');
 
-let lastTokenCache = '';
-const intervalTime = 300000-1000; // 5 minutes in milliseconds
-let countdown = intervalTime / 1000; // Countdown in seconds
-
-// Function to check for changes in minfile.json
-function checkForChanges() {
-    fs.readFile('minfileAll.json', 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading minfileAll.json:', err);
-            return;
-        }
-
-        // Check if the content has changed
-        if (data !== lastTokenCache) {
-            lastTokenCache = data; // Update the last known content
-            console.log('minfileAll.json has changed. Executing command...');
-
-            // Execute your shell command here
-            exec('your-command-here', (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Error executing command: ${error.message}`);
-                    return;
-                }
-                if (stderr) {
-                    console.error(`Command stderr: ${stderr}`);
-                    return;
-                }
-                console.log(`Command output: ${stdout}`);
-            });
-        }
+function createInterface() {
+    return readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
     });
 }
 
-// Function to run the main process
-async function runMain() {
-    console.log('Starting main process...');
+async function selectDataSource() {
+    const rl = createInterface();
+
+    console.log('\n=== Token Data Fetcher ===');
+    console.log('1. CoinGecko');
+    console.log('2. Birdeye');
+
+    return new Promise((resolve) => {
+        rl.question('\nSelect data source (1 or 2): ', (answer) => {
+            rl.close();
+            resolve(answer.trim());
+        });
+    });
+}
+
+async function main() {
     try {
-        await fetchData();
-        await extractData();
-        await formatData();
-        console.log('Data fetching, extraction, and formatting completed successfully.');
+        const choice = await selectDataSource();
+
+        switch (choice) {
+            case '1':
+                console.log('\nStarting CoinGecko data fetcher...\n');
+                geckoMain();
+                break;
+            case '2':
+                console.log('\nStarting Birdeye data fetcher...\n');
+                birdeyeMain();
+                break;
+            default:
+                console.log('\nInvalid selection. Please run again and select 1 or 2.');
+                process.exit(1);
+        }
     } catch (error) {
-        console.error('An error occurred during the process:', error);
+        console.error('Error:', error);
+        process.exit(1);
     }
 }
 
-// Initial run
-runMain();
+// Run the main function
+if (require.main === module) {
+    main();
+}
 
-// Set an interval to run the main process every 5 minutes
-setInterval(() => {
-    console.log('Running main process...');
-    runMain();
-    checkForChanges();
-}, intervalTime);
-
-// Countdown loop
-setInterval(() => {
-    if (countdown > 0) {
-        console.log(`Next run in ${countdown} seconds...`);
-        countdown--;
-    } else {
-        countdown = intervalTime / 1000; // Reset countdown
-    }
-}, 1000); // Update countdown every second
+module.exports = main;

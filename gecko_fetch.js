@@ -15,7 +15,7 @@ const CONFIG = {
         // Price & Value Filters
         MIN_BASE_TOKEN_PRICE_USD: 0,
         MIN_RESERVE_USD: 0,
-        MIN_FDV_USD: 0,
+        MIN_FDV_USD: 100000,
         
         // Volume Filters
         MIN_24H_VOLUME: 0,
