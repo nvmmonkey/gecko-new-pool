@@ -124,6 +124,22 @@ function writeSelectedTokens(tokens, start, count, rl, resolve, reject) {
             rl.close();
             resolve(selectedTokens);
         });
+
+        fs.writeFile('minfile.json', JSON.stringify(addresses, null, 2), (err) => {
+            if (err) {
+                console.error('Error writing to minfileBirdeye.json:', err);
+                rl.close();
+                return reject(err);
+            }
+
+            console.log('\nSelected tokens have been written to:');
+            console.log('- tdp_birdeye_selected.json (full data)');
+            console.log('- minfileBirdeye.json (addresses only)');
+            console.log(`Selected indices: ${start} to ${start + selectedTokens.length - 1}`);
+            console.log(`Volume range: $${output.volumeRange.min.toLocaleString()} - $${output.volumeRange.max.toLocaleString()}`);
+            rl.close();
+            resolve(selectedTokens);
+        });
     });
 }
 

@@ -50,22 +50,27 @@ async function runMain() {
     }
 }
 
-// Initial run
-runMain();
+async function main() {
+    // Initial run
+    await runMain();
+    
+    // Set an interval to run the main process every 5 minutes
+    setInterval(() => {
+        console.log('Running main process...');
+        runMain();
+        checkForChanges();
+    }, intervalTime);
 
-// Set an interval to run the main process every 5 minutes
-setInterval(() => {
-    console.log('Running main process...');
-    runMain();
-    checkForChanges();
-}, intervalTime);
+    // Countdown loop
+    setInterval(() => {
+        if (countdown > 0) {
+            console.log(`Next run in ${countdown} seconds...`);
+            countdown--;
+        } else {
+            countdown = intervalTime / 1000; // Reset countdown
+        }
+    }, 1000);
+}
 
-// Countdown loop
-setInterval(() => {
-    if (countdown > 0) {
-        console.log(`Next run in ${countdown} seconds...`);
-        countdown--;
-    } else {
-        countdown = intervalTime / 1000; // Reset countdown
-    }
-}, 1000); // Update countdown every second
+// Export the main function instead of auto-executing
+module.exports = main;

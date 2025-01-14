@@ -37,6 +37,7 @@ async function runSequence() {
         console.log('\n1. Fetching tokens from Birdeye API...');
         await fetchBirdeyeTokens();
         
+        // Add delay between operations
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         console.log('\n2. Processing and extracting relevant token data...');
@@ -67,8 +68,5 @@ async function main() {
     console.log('\nScheduler started - will run every 6 minutes');
 }
 
-// Execute the main function
-main().catch(error => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-});
+// Export the main function instead of auto-executing
+module.exports = main;
