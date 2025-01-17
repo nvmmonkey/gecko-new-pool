@@ -8,7 +8,7 @@ const CONFIG = {
     RETRY_ATTEMPTS: 3,
     
     // Pagination
-    TOTAL_PAGES: 10,
+    TOTAL_PAGES: 1,
     
     // Filters
     FILTERS: {
@@ -18,20 +18,20 @@ const CONFIG = {
         MIN_FDV_USD: 100000,
         
         // Volume Filters
-        MIN_24H_VOLUME: 0,
+        MIN_24H_VOLUME: 10000,
         MIN_24H_TRANSACTIONS: 0,
         MIN_24H_BUYERS: 0,
         
         // Price Change Filters
-        MAX_PRICE_CHANGE_24H: 100,
+        MAX_PRICE_CHANGE_24H: 100000000,
         
-        // DEX Filters
+        // DEX Filters True=include False=include
         DEX_FILTERS: {
-            "raydium": true,
+            "raydium": false,
             "fluxbeam": true,
             "dexlab": true,
             "meteora": false,
-            "orca": false,
+            "orca": true,
             "raydium-clmm": false
         },
         
