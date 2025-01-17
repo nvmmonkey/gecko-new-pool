@@ -88,57 +88,62 @@ function selectTokensByIndex(rl, tokens, resolve, reject) {
 function writeSelectedTokens(tokens, start, count, rl, resolve, reject) {
     const selectedTokens = tokens.slice(start, start + count);
     
-    // Create detailed output
-    const output = {
-        updateTime: new Date().toISOString(),
-        totalSelected: selectedTokens.length,
-        volumeRange: {
-            min: Math.min(...selectedTokens.map(t => t.v24hUSD)),
-            max: Math.max(...selectedTokens.map(t => t.v24hUSD))
-        },
-        tokens: selectedTokens
-    };
+    rl.question('\nDo you want to filter out contracts that do not end with "pump"? (y/n) ', (answer) => {
+        const finalTokens = answer.toLowerCase() === 'y' 
+            ? selectedTokens.filter(token => token.address.endsWith('pump'))
+            : selectedTokens;
 
-    // Write full data to tdp_birdeye_selected.json
-    fs.writeFile('tdp_birdeye_selected.json', JSON.stringify(output, null, 2), (err) => {
-        if (err) {
-            console.error('Error writing to tdp_birdeye_selected.json:', err);
-            rl.close();
-            return reject(err);
-        }
+        // Create detailed output
+        const output = {
+            updateTime: new Date().toISOString(),
+            totalSelected: finalTokens.length,
+            volumeRange: {
+                min: Math.min(...finalTokens.map(t => t.v24hUSD)),
+                max: Math.max(...finalTokens.map(t => t.v24hUSD))
+            },
+            tokens: finalTokens
+        };
 
-        // Write only addresses to minfileBirdeye.json
-        const addresses = selectedTokens.map(token => token.address);
-        fs.writeFile('minfileBirdeye.json', JSON.stringify(addresses, null, 2), (err) => {
+        // Write full data to tdp_birdeye_selected.json
+        fs.writeFile('tdp_birdeye_selected.json', JSON.stringify(output, null, 2), (err) => {
             if (err) {
-                console.error('Error writing to minfileBirdeye.json:', err);
+                console.error('Error writing to tdp_birdeye_selected.json:', err);
                 rl.close();
                 return reject(err);
             }
 
-            console.log('\nSelected tokens have been written to:');
-            console.log('- tdp_birdeye_selected.json (full data)');
-            console.log('- minfileBirdeye.json (addresses only)');
-            console.log(`Selected indices: ${start} to ${start + selectedTokens.length - 1}`);
-            console.log(`Volume range: $${output.volumeRange.min.toLocaleString()} - $${output.volumeRange.max.toLocaleString()}`);
-            rl.close();
-            resolve(selectedTokens);
-        });
+            // Write addresses to both minfileBirdeye.json and minfile.json
+            const addresses = finalTokens.map(token => token.address);
+            const writeFiles = [
+                { name: 'minfileBirdeye.json', data: addresses },
+                { name: 'minfile.json', data: addresses }
+            ];
 
-        fs.writeFile('minfile.json', JSON.stringify(addresses, null, 2), (err) => {
-            if (err) {
-                console.error('Error writing to minfileBirdeye.json:', err);
+            Promise.all(writeFiles.map(file => 
+                new Promise((resolveWrite, rejectWrite) => {
+                    fs.writeFile(file.name, JSON.stringify(file.data, null, 2), (err) => {
+                        if (err) rejectWrite(err);
+                        else resolveWrite();
+                    });
+                })
+            )).then(() => {
+                console.log('\nSelected tokens have been written to:');
+                console.log('- tdp_birdeye_selected.json (full data)');
+                console.log('- minfileBirdeye.json (addresses only)');
+                console.log('- minfile.json (addresses only)');
+                console.log(`Selected indices: ${start} to ${start + count - 1}`);
+                console.log(`Final number of tokens: ${finalTokens.length}`);
+                if (answer.toLowerCase() === 'y') {
+                    console.log('Filtered to only include contracts ending with "pump"');
+                }
+                console.log(`Volume range: $${output.volumeRange.min.toLocaleString()} - $${output.volumeRange.max.toLocaleString()}`);
                 rl.close();
-                return reject(err);
-            }
-
-            console.log('\nSelected tokens have been written to:');
-            console.log('- tdp_birdeye_selected.json (full data)');
-            console.log('- minfileBirdeye.json (addresses only)');
-            console.log(`Selected indices: ${start} to ${start + selectedTokens.length - 1}`);
-            console.log(`Volume range: $${output.volumeRange.min.toLocaleString()} - $${output.volumeRange.max.toLocaleString()}`);
-            rl.close();
-            resolve(selectedTokens);
+                resolve(finalTokens);
+            }).catch(err => {
+                console.error('Error writing files:', err);
+                rl.close();
+                reject(err);
+            });
         });
     });
 }

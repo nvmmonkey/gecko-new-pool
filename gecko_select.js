@@ -21,18 +21,7 @@ function selectMints() {
 
             rl.question('How many mints do you want to select? (Press Enter for all) ', (count) => {
                 if (count.trim() === '') {
-                    const selectedMints = tokens;
-                    fs.writeFile('minfile.json', JSON.stringify(selectedMints, null, 2), (err) => {
-                        if (err) {
-                            console.error('Error writing to minfile.json:', err);
-                            rl.close();
-                            return reject(err);
-                        }
-                        console.log('\nAll mints have been written to minfile.json');
-                        console.log(`Selected indices: 0 to ${totalTokens - 1}`);
-                        rl.close();
-                        resolve(selectedMints);
-                    });
+                    filterAndSaveMints(tokens, rl, resolve, reject);
                     return;
                 }
 
@@ -55,20 +44,34 @@ function selectMints() {
                     }
 
                     const selectedMints = tokens.slice(start, start + mintCount);
-                    
-                    fs.writeFile('minfile.json', JSON.stringify(selectedMints, null, 2), (err) => {
-                        if (err) {
-                            console.error('Error writing to minfile.json:', err);
-                            rl.close();
-                            return reject(err);
-                        }
-                        console.log('\nSelected mints have been written to minfile.json');
-                        console.log(`Selected indices: ${start} to ${start + mintCount - 1}`);
-                        rl.close();
-                        resolve(selectedMints);
-                    });
+                    filterAndSaveMints(selectedMints, rl, resolve, reject);
                 });
             });
+        });
+    });
+}
+
+function filterAndSaveMints(selectedMints, rl, resolve, reject) {
+    rl.question('Do you want to filter out contracts that do not end with "pump"? (y/n) ', (answer) => {
+        const filteredMints = answer.toLowerCase() === 'y' 
+            ? selectedMints.filter(mint => mint.endsWith('pump'))
+            : selectedMints;
+
+        fs.writeFile('minfile.json', JSON.stringify(filteredMints, null, 2), (err) => {
+            if (err) {
+                console.error('Error writing to minfile.json:', err);
+                rl.close();
+                return reject(err);
+            }
+            
+            console.log('\nSelected mints have been written to minfile.json');
+            console.log(`Total mints selected: ${filteredMints.length}`);
+            if (answer.toLowerCase() === 'y') {
+                console.log(`Filtered to only include contracts ending with "pump"`);
+            }
+            
+            rl.close();
+            resolve(filteredMints);
         });
     });
 }
