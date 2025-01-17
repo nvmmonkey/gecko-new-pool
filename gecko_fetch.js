@@ -25,7 +25,7 @@ const CONFIG = {
         // Price Change Filters
         MAX_PRICE_CHANGE_24H: 100000000,
         
-        // DEX Filters True=include False=include
+        // DEX Filters True=exclude False=include
         DEX_FILTERS: {
             "raydium": false,
             "fluxbeam": true,
