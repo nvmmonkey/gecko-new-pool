@@ -23,35 +23,45 @@ function askQuestion(query) {
 }
 
 function checkForChanges() {
-    fs.readFile('minfileAll.json', 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading minfileAll.json:', err);
-            return;
-        }
-
-        if (data !== lastTokenCache) {
-            lastTokenCache = data;
-            console.log('minfileAll.json has changed. Executing command...');
-
-            exec('your-command-here', (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Error executing command: ${error.message}`);
-                    return;
+    // Only check for changes if we're in append mode
+    if (shouldAppend) {
+        fs.readFile('minfileAll.json', 'utf8', (err, data) => {
+            if (err) {
+                if (err.code !== 'ENOENT') {  // Ignore "file not found" errors
+                    console.error('Error reading minfileAll.json:', err);
                 }
-                if (stderr) {
-                    console.error(`Command stderr: ${stderr}`);
-                    return;
-                }
-                console.log(`Command output: ${stdout}`);
-            });
-        }
-    });
+                return;
+            }
+
+            if (data !== lastTokenCache) {
+                lastTokenCache = data;
+                console.log('minfileAll.json has changed. Executing command...');
+
+                exec('your-command-here', (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Error executing command: ${error.message}`);
+                        return;
+                    }
+                    if (stderr) {
+                        console.error(`Command stderr: ${stderr}`);
+                        return;
+                    }
+                    console.log(`Command output: ${stdout}`);
+                });
+            }
+        });
+    }
 }
 
 async function runMain() {
     console.log('Starting main process...');
     try {
-        await fetchData(null, !shouldAppend); // If shouldAppend is false, we clear the file
+        // Add a small delay after file deletion before starting new operations
+        if (!shouldAppend) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        await fetchData(null, !shouldAppend);
         await extractData();
         await formatData();
         console.log('Data fetching, extraction, and formatting completed successfully.');

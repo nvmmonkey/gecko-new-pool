@@ -2,6 +2,9 @@ const fs = require('fs');
 
 function formatData() {
     return new Promise((resolve, reject) => {
+        // Get MAX_CONTRACTS from environment variable, default to 50 if not set
+        const MAX_CONTRACTS = parseInt(process.env.MAX_CONTRACTS) || 50;
+        
         fs.readFile('tbp.json', 'utf8', (err, data) => {
             if (err) {
                 console.error('Error reading the file:', err);
@@ -50,7 +53,12 @@ function formatData() {
                                 }
                             });
 
-                            fs.writeFile(filename, JSON.stringify(combinedTokens, null, 2), (err) => {
+                            // When writing files:
+                            const finalTokens = filename === 'minfile.json' 
+                                ? combinedTokens.slice(0, MAX_CONTRACTS)
+                                : combinedTokens;
+
+                            fs.writeFile(filename, JSON.stringify(finalTokens, null, 2), (err) => {
                                 if (err) {
                                     console.error(`Error writing to ${filename}:`, err);
                                     return rejectWrite(err);

@@ -36,6 +36,21 @@ async function checkExistingFiles() {
     }
 }
 
+async function askMaxContracts() {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+        rl.question('Enter maximum number of contracts to keep (default 50): ', (answer) => {
+            rl.close();
+            const num = parseInt(answer);
+            resolve(isNaN(num) ? 50 : num);
+        });
+    });
+}
+
 async function selectFromExisting() {
     const rl = createInterface();
 
@@ -94,7 +109,6 @@ async function main() {
                         await birdeyeSelect();
                         break;
                     case '3':
-                        // Continue to new fetch process
                         break;
                     default:
                         console.log('\nInvalid selection. Please select 1-3.');
@@ -111,6 +125,9 @@ async function main() {
             switch (choice) {
                 case '1':
                     console.log('\nStarting CoinGecko data fetcher...\n');
+                    const maxContracts = await askMaxContracts();
+                    process.env.MAX_CONTRACTS = maxContracts.toString();
+                    console.log(`\nWill keep maximum ${maxContracts} contracts in minfile.json`);
                     await geckoMain();
                     return;
                 case '2':
