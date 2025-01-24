@@ -12,13 +12,16 @@ const rl = readline.createInterface({
 async function askQuestion(question) {
   return new Promise(resolve => {
     rl.question(question, answer => {
-      // Clean the input by removing any non-numeric, non-underscore characters
-      const cleanedAnswer = answer.replace(/[^\d_]/g, '');
-      if (cleanedAnswer) {
+      console.log('Raw input:', answer); // Debug the raw input
+      // First try to extract any numbers from the input
+      const matches = answer.match(/\d+/g);
+      if (matches && matches.length > 0) {
+        // Join all found numbers together
+        const cleanedAnswer = matches.join('');
+        console.log('Cleaned answer:', cleanedAnswer); // Debug the cleaned result
         resolve(cleanedAnswer);
       } else {
-        // If the input was invalid, return the original input
-        // This allows the calling code to handle the validation
+        console.log('No valid numbers found in input'); // Debug when no numbers found
         resolve(answer);
       }
     });
