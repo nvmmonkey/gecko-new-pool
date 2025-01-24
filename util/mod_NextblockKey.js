@@ -71,17 +71,31 @@ async function readYamlFile(filePath) {
 }
 
 async function writeYamlFile(filePath, content, setting, newValue) {
-  const lines = content.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(setting)) {
-      // Replace the entire value after the colon, preserving indentation
-      const indent = lines[i].match(/^\s*/)[0];
-      // Ensure the value is properly quoted to handle special characters
-      lines[i] = `${indent}${setting} "${newValue}"`;
-      break;
+  try {
+    // Parse the existing YAML content
+    const config = yaml.load(content);
+    
+    // Update the specific key while preserving the structure
+    if (setting === 'NEXTBLOCK_KEY:') {
+      if (!config.NEXTBLOCK) {
+        config.NEXTBLOCK = {};
+      }
+      config.NEXTBLOCK.NEXTBLOCK_KEY = newValue;
     }
+    
+    // Convert back to YAML string with proper formatting
+    const updatedContent = yaml.dump(config, {
+      indent: 2,
+      lineWidth: -1,
+      noQuotes: true
+    });
+    
+    // Write the updated content back to file
+    await fs.writeFile(filePath, updatedContent);
+  } catch (error) {
+    console.error(`Error updating ${filePath}: ${error.message}`);
+    throw error;
   }
-  await fs.writeFile(filePath, lines.join('\n'));
 }
 
 async function modifyConfigs() {
