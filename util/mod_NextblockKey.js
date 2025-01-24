@@ -68,9 +68,23 @@ async function writeYamlFile(filePath, content, setting, newValue) {
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles(".");
+    const startPath = decodeURIComponent(
+      (await askQuestion("Enter the search path (default: current directory): ") || ".")
+        .replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1))
+    );
+    
+    // Validate the path to ensure it exists
+    try {
+      await fs.access(startPath);
+    } catch (error) {
+      console.log(`Invalid path or no access to: ${startPath}`);
+      rl.close();
+      return;
+    }
+
+    const configFiles = await findConfigFiles(startPath);
     if (configFiles.length === 0) {
-      console.log("No config files found");
+      console.log(`No config files found in ${startPath}`);
       rl.close();
       return;
     }
