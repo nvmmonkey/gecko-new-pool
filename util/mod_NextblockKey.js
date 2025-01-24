@@ -45,22 +45,22 @@ async function displayConfigTable(configs) {
   
   let index = 1;
   for (const [filePath, config] of Object.entries(configs)) {
-    if (config.TEMPORAL?.TEMPORAL_KEY) {
-      console.log(`| ${index} | ${filePath} | TEMPORAL_KEY | ${config.TEMPORAL.TEMPORAL_KEY} |`);
-      index++;
-    }
-    if (config.FAST?.FAST_KEY) {
-      console.log(`| ${index} | ${filePath} | FAST_KEY | ${config.FAST.FAST_KEY} |`);
-      index++;
-    }
+    // if (config.TEMPORAL?.TEMPORAL_KEY) {
+    //   console.log(`| ${index} | ${filePath} | TEMPORAL_KEY | ${config.TEMPORAL.TEMPORAL_KEY} |`);
+    //   index++;
+    // }
+    // if (config.FAST?.FAST_KEY) {
+    //   console.log(`| ${index} | ${filePath} | FAST_KEY | ${config.FAST.FAST_KEY} |`);
+    //   index++;
+    // }
     if (config.NEXTBLOCK?.NEXTBLOCK_KEY) {
       console.log(`| ${index} | ${filePath} | NEXTBLOCK_KEY | ${config.NEXTBLOCK.NEXTBLOCK_KEY} |`);
       index++;
     }
-    if (config.BLOXROUTE?.BLOXROUTE_KEY) {
-      console.log(`| ${index} | ${filePath} | BLOXROUTE_KEY | ${config.BLOXROUTE.BLOXROUTE_KEY} |`);
-      index++;
-    }
+    // if (config.BLOXROUTE?.BLOXROUTE_KEY) {
+    //   console.log(`| ${index} | ${filePath} | BLOXROUTE_KEY | ${config.BLOXROUTE.BLOXROUTE_KEY} |`);
+    //   index++;
+    // }
   }
   return index - 1;
 }
@@ -105,18 +105,18 @@ async function modifyConfigs() {
       const newValue = parseInt((await askQuestion('Enter new KEY value: ')).replace(/_/g, ''));
       
       for (const [filePath, config] of Object.entries(configs)) {
-        if (config.TEMPORAL?.TEMPORAL_KEY) {
-          await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
-        }
-        if (config.FAST?.FAST_KEY) {
-          await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
-        }
+        // if (config.TEMPORAL?.TEMPORAL_KEY) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
+        // }
+        // if (config.FAST?.FAST_KEY) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
+        // }
         if (config.NEXTBLOCK?.NEXTBLOCK_KEY) {
           await writeYamlFile(filePath, originalContents[filePath], 'NEXTBLOCK_KEY:', newValue);
         }
-        if (config.BLOXROUTE?.BLOXROUTE_KEY) {
-          await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
-        }
+        // if (config.BLOXROUTE?.BLOXROUTE_KEY) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
+        // }
         console.log(`Updated ${filePath}`);
       }
     } else {
@@ -130,25 +130,25 @@ async function modifyConfigs() {
       const newValue = parseInt((await askQuestion('Enter new KEY value: ')).replace(/_/g, ''));
       let currentIndex = 1;
       for (const [filePath, config] of Object.entries(configs)) {
-        if (config.TEMPORAL?.TEMPORAL_KEY && currentIndex === selectedIndex) {
-          await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
-          break;
-        }
-        currentIndex++;
-        if (config.FAST?.FAST_KEY && currentIndex === selectedIndex) {
-          await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
-          break;
-        }
+        // if (config.TEMPORAL?.TEMPORAL_KEY && currentIndex === selectedIndex) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
+        //   break;
+        // }
+        // currentIndex++;
+        // if (config.FAST?.FAST_KEY && currentIndex === selectedIndex) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
+        //   break;
+        // }
         currentIndex++;
         if (config.NEXTBLOCK?.NEXTBLOCK_KEY && currentIndex === selectedIndex) {
           await writeYamlFile(filePath, originalContents[filePath], 'NEXTBLOCK_KEY:', newValue);
           break;
         }
-        currentIndex++;
-        if (config.BLOXROUTE?.BLOXROUTE_KEY && currentIndex === selectedIndex) {
-          await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
-          break;
-        }
+        // currentIndex++;
+        // if (config.BLOXROUTE?.BLOXROUTE_KEY && currentIndex === selectedIndex) {
+        //   await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
+        //   break;
+        // }
       }
     }
   } catch (error) {
