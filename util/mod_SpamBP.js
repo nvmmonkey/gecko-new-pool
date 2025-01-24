@@ -10,7 +10,19 @@ const rl = readline.createInterface({
 });
 
 async function askQuestion(question) {
-  return new Promise(resolve => rl.question(question, resolve));
+  return new Promise(resolve => {
+    rl.question(question, answer => {
+      // Clean the input by removing any non-numeric, non-underscore characters
+      const cleanedAnswer = answer.replace(/[^\d_]/g, '');
+      if (cleanedAnswer) {
+        resolve(cleanedAnswer);
+      } else {
+        // If the input was invalid, return the original input
+        // This allows the calling code to handle the validation
+        resolve(answer);
+      }
+    });
+  });
 }
 
 async function findConfigFiles(startPath = os.homedir()) {
@@ -106,7 +118,14 @@ async function modifyConfigs() {
     const modifyAll = await askQuestion('\nDo you want to modify all settings? (y/n): ');
 
     if (modifyAll.toLowerCase() === 'y') {
-      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
+      let newValue;
+      do {
+        const input = await askQuestion('Enter new BP value: ');
+        newValue = parseInt(input.replace(/_/g, ''));
+        if (isNaN(newValue) || newValue < 0) {
+          console.log('Please enter a valid positive number.');
+        }
+      } while (isNaN(newValue) || newValue < 0);
       
       for (const [filePath, config] of Object.entries(configs)) {
         if (config.JITO?.STATIC_TIP_BP) {
@@ -134,7 +153,15 @@ async function modifyConfigs() {
         return;
       }
 
-      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
+      let newValue;
+      do {
+        const input = await askQuestion('Enter new BP value: ');
+        newValue = parseInt(input.replace(/_/g, ''));
+        if (isNaN(newValue) || newValue < 0) {
+          console.log('Please enter a valid positive number.');
+        }
+      } while (isNaN(newValue) || newValue < 0);
+
       let currentIndex = 1;
       for (const [filePath, config] of Object.entries(configs)) {
         if (config.JITO?.STATIC_TIP_BP && currentIndex === selectedIndex) {
