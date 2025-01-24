@@ -2,7 +2,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
 const readline = require('readline');
-const os = require('os');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -13,23 +12,17 @@ async function askQuestion(question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
-async function findConfigFiles(startPath = os.homedir()) {
-  const files = await fs.readdir(startPath, { withFileTypes: true });
+async function findConfigFiles(currentPath) {
+  const files = await fs.readdir(currentPath, { withFileTypes: true });
   let configFiles = [];
   
   for (const file of files) {
-    const fullPath = path.join(startPath, file.name);
-    try {
-      if (file.isDirectory()) {
-        configFiles = configFiles.concat(await findConfigFiles(fullPath));
-      } else if (file.name.startsWith('config') && 
-                (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
-        configFiles.push(fullPath);
-      }
-    } catch (error) {
-      if (error.code !== 'EACCES') {
-        console.warn(`Warning: Skipping ${fullPath} - ${error.message}`);
-      }
+    const fullPath = path.join(currentPath, file.name);
+    if (file.isDirectory()) {
+      configFiles = configFiles.concat(await findConfigFiles(fullPath));
+    } else if (file.name.startsWith('config') && 
+              (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
+      configFiles.push(fullPath);
     }
   }
   return configFiles;
@@ -45,22 +38,11 @@ async function displayConfigTable(configs) {
   
   let index = 1;
   for (const [filePath, config] of Object.entries(configs)) {
-    // if (config.TEMPORAL?.TEMPORAL_KEY) {
-    //   console.log(`| ${index} | ${filePath} | TEMPORAL_KEY | ${config.TEMPORAL.TEMPORAL_KEY} |`);
-    //   index++;
-    // }
-    // if (config.FAST?.FAST_KEY) {
-    //   console.log(`| ${index} | ${filePath} | FAST_KEY | ${config.FAST.FAST_KEY} |`);
-    //   index++;
-    // }
+
     if (config.NEXTBLOCK?.NEXTBLOCK_KEY) {
       console.log(`| ${index} | ${filePath} | NEXTBLOCK_KEY | ${config.NEXTBLOCK.NEXTBLOCK_KEY} |`);
       index++;
-    }
-    // if (config.BLOXROUTE?.BLOXROUTE_KEY) {
-    //   console.log(`| ${index} | ${filePath} | BLOXROUTE_KEY | ${config.BLOXROUTE.BLOXROUTE_KEY} |`);
-    //   index++;
-    // }
+
   }
   return index - 1;
 }
@@ -71,38 +53,21 @@ async function readYamlFile(filePath) {
 }
 
 async function writeYamlFile(filePath, content, setting, newValue) {
-  try {
-    // Parse the existing YAML content
-    const config = yaml.load(content);
-    
-    // Update the specific key while preserving the structure
-    if (setting === 'NEXTBLOCK_KEY:') {
-      if (!config.NEXTBLOCK) {
-        config.NEXTBLOCK = {};
-      }
-      config.NEXTBLOCK.NEXTBLOCK_KEY = newValue;
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(setting)) {
+      lines[i] = lines[i].replace(/\d+(_\d+)*/, formatNumber(newValue));
+      break;
     }
-    
-    // Convert back to YAML string with proper formatting
-    const updatedContent = yaml.dump(config, {
-      indent: 2,
-      lineWidth: -1,
-      noQuotes: true
-    });
-    
-    // Write the updated content back to file
-    await fs.writeFile(filePath, updatedContent);
-  } catch (error) {
-    console.error(`Error updating ${filePath}: ${error.message}`);
-    throw error;
   }
+  await fs.writeFile(filePath, lines.join('\n'));
 }
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles();
+    const configFiles = await findConfigFiles('.');
     if (configFiles.length === 0) {
-      console.log('No config files found in home directory');
+      console.log('No config files found');
       rl.close();
       return;
     }
@@ -119,21 +84,14 @@ async function modifyConfigs() {
     const modifyAll = await askQuestion('\nDo you want to modify all settings? (y/n): ');
 
     if (modifyAll.toLowerCase() === 'y') {
-      const newValue = await askQuestion('Enter new KEY value: ');
+      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
       
       for (const [filePath, config] of Object.entries(configs)) {
-        // if (config.TEMPORAL?.TEMPORAL_KEY) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
-        // }
-        // if (config.FAST?.FAST_KEY) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
-        // }
+
         if (config.NEXTBLOCK?.NEXTBLOCK_KEY) {
           await writeYamlFile(filePath, originalContents[filePath], 'NEXTBLOCK_KEY:', newValue);
         }
-        // if (config.BLOXROUTE?.BLOXROUTE_KEY) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
-        // }
+
         console.log(`Updated ${filePath}`);
       }
     } else {
@@ -144,28 +102,16 @@ async function modifyConfigs() {
         return;
       }
 
-      const newValue = await askQuestion('Enter new KEY value: ');
+      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
       let currentIndex = 1;
       for (const [filePath, config] of Object.entries(configs)) {
-        // if (config.TEMPORAL?.TEMPORAL_KEY && currentIndex === selectedIndex) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_KEY:', newValue);
-        //   break;
-        // }
-        // currentIndex++;
-        // if (config.FAST?.FAST_KEY && currentIndex === selectedIndex) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'FAST_KEY:', newValue);
-        //   break;
-        // }
+
         currentIndex++;
         if (config.NEXTBLOCK?.NEXTBLOCK_KEY && currentIndex === selectedIndex) {
           await writeYamlFile(filePath, originalContents[filePath], 'NEXTBLOCK_KEY:', newValue);
           break;
         }
-        // currentIndex++;
-        // if (config.BLOXROUTE?.BLOXROUTE_KEY && currentIndex === selectedIndex) {
-        //   await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_KEY:', newValue);
-        //   break;
-        // }
+
       }
     }
   } catch (error) {
