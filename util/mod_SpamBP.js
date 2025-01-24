@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
 const readline = require('readline');
+const os = require('os');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -12,17 +13,23 @@ async function askQuestion(question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
-async function findConfigFiles(currentPath) {
-  const files = await fs.readdir(currentPath, { withFileTypes: true });
+async function findConfigFiles(startPath = os.homedir()) {
+  const files = await fs.readdir(startPath, { withFileTypes: true });
   let configFiles = [];
   
   for (const file of files) {
-    const fullPath = path.join(currentPath, file.name);
-    if (file.isDirectory()) {
-      configFiles = configFiles.concat(await findConfigFiles(fullPath));
-    } else if (file.name.startsWith('config') && 
-              (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
-      configFiles.push(fullPath);
+    const fullPath = path.join(startPath, file.name);
+    try {
+      if (file.isDirectory()) {
+        configFiles = configFiles.concat(await findConfigFiles(fullPath));
+      } else if (file.name.startsWith('config') && 
+                (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
+        configFiles.push(fullPath);
+      }
+    } catch (error) {
+      if (error.code !== 'EACCES') {
+        console.warn(`Warning: Skipping ${fullPath} - ${error.message}`);
+      }
     }
   }
   return configFiles;
@@ -80,9 +87,9 @@ async function writeYamlFile(filePath, content, setting, newValue) {
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles('.');
+    const configFiles = await findConfigFiles();
     if (configFiles.length === 0) {
-      console.log('No config files found');
+      console.log('No config files found in home directory');
       rl.close();
       return;
     }
