@@ -74,7 +74,10 @@ async function writeYamlFile(filePath, content, setting, newValue) {
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].includes(setting)) {
-      lines[i] = lines[i].replace(/\d+(_\d+)*/, formatNumber(newValue));
+      // Replace the entire value after the colon, preserving indentation
+      const indent = lines[i].match(/^\s*/)[0];
+      // Ensure the value is properly quoted to handle special characters
+      lines[i] = `${indent}${setting} "${newValue}"`;
       break;
     }
   }
@@ -102,7 +105,7 @@ async function modifyConfigs() {
     const modifyAll = await askQuestion('\nDo you want to modify all settings? (y/n): ');
 
     if (modifyAll.toLowerCase() === 'y') {
-      const newValue = parseInt((await askQuestion('Enter new KEY value: ')).replace(/_/g, ''));
+      const newValue = await askQuestion('Enter new KEY value: ');
       
       for (const [filePath, config] of Object.entries(configs)) {
         // if (config.TEMPORAL?.TEMPORAL_KEY) {
@@ -127,7 +130,7 @@ async function modifyConfigs() {
         return;
       }
 
-      const newValue = parseInt((await askQuestion('Enter new KEY value: ')).replace(/_/g, ''));
+      const newValue = await askQuestion('Enter new KEY value: ');
       let currentIndex = 1;
       for (const [filePath, config] of Object.entries(configs)) {
         // if (config.TEMPORAL?.TEMPORAL_KEY && currentIndex === selectedIndex) {

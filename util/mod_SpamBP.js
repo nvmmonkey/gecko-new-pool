@@ -2,7 +2,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
 const readline = require('readline');
-const os = require('os');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -10,41 +9,20 @@ const rl = readline.createInterface({
 });
 
 async function askQuestion(question) {
-  return new Promise(resolve => {
-    rl.question(question, answer => {
-      console.log('Raw input:', answer); // Debug the raw input
-      // First try to extract any numbers from the input
-      const matches = answer.match(/\d+/g);
-      if (matches && matches.length > 0) {
-        // Join all found numbers together
-        const cleanedAnswer = matches.join('');
-        console.log('Cleaned answer:', cleanedAnswer); // Debug the cleaned result
-        resolve(cleanedAnswer);
-      } else {
-        console.log('No valid numbers found in input'); // Debug when no numbers found
-        resolve(answer);
-      }
-    });
-  });
+  return new Promise(resolve => rl.question(question, resolve));
 }
 
-async function findConfigFiles(startPath = os.homedir()) {
-  const files = await fs.readdir(startPath, { withFileTypes: true });
+async function findConfigFiles(currentPath) {
+  const files = await fs.readdir(currentPath, { withFileTypes: true });
   let configFiles = [];
   
   for (const file of files) {
-    const fullPath = path.join(startPath, file.name);
-    try {
-      if (file.isDirectory()) {
-        configFiles = configFiles.concat(await findConfigFiles(fullPath));
-      } else if (file.name.startsWith('config') && 
-                (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
-        configFiles.push(fullPath);
-      }
-    } catch (error) {
-      if (error.code !== 'EACCES') {
-        console.warn(`Warning: Skipping ${fullPath} - ${error.message}`);
-      }
+    const fullPath = path.join(currentPath, file.name);
+    if (file.isDirectory()) {
+      configFiles = configFiles.concat(await findConfigFiles(fullPath));
+    } else if (file.name.startsWith('config') && 
+              (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
+      configFiles.push(fullPath);
     }
   }
   return configFiles;
@@ -102,9 +80,9 @@ async function writeYamlFile(filePath, content, setting, newValue) {
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles();
+    const configFiles = await findConfigFiles('.');
     if (configFiles.length === 0) {
-      console.log('No config files found in home directory');
+      console.log('No config files found');
       rl.close();
       return;
     }
@@ -121,14 +99,7 @@ async function modifyConfigs() {
     const modifyAll = await askQuestion('\nDo you want to modify all settings? (y/n): ');
 
     if (modifyAll.toLowerCase() === 'y') {
-      let newValue;
-      do {
-        const input = await askQuestion('Enter new BP value: ');
-        newValue = parseInt(input.replace(/_/g, ''));
-        if (isNaN(newValue) || newValue < 0) {
-          console.log('Please enter a valid positive number.');
-        }
-      } while (isNaN(newValue) || newValue < 0);
+      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
       
       for (const [filePath, config] of Object.entries(configs)) {
         if (config.JITO?.STATIC_TIP_BP) {
@@ -156,15 +127,7 @@ async function modifyConfigs() {
         return;
       }
 
-      let newValue;
-      do {
-        const input = await askQuestion('Enter new BP value: ');
-        newValue = parseInt(input.replace(/_/g, ''));
-        if (isNaN(newValue) || newValue < 0) {
-          console.log('Please enter a valid positive number.');
-        }
-      } while (isNaN(newValue) || newValue < 0);
-
+      const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
       let currentIndex = 1;
       for (const [filePath, config] of Object.entries(configs)) {
         if (config.JITO?.STATIC_TIP_BP && currentIndex === selectedIndex) {
