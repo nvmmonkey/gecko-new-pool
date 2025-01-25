@@ -118,7 +118,7 @@ while true; do
   # Automatic restart after $AUTO_RESTART minutes if set and not 0
   if [ -n "$AUTO_RESTART" ] && [ "$AUTO_RESTART" -ne 0 ]; then
     sleep ${AUTO_RESTART}m
-    echo "AUTO_RESTART is set. Restarting after $AUTO_RESTART minutes."
+    echo "AUTO_RESTART is set. Restarting after $AUTO_RESTART minutes..."
     kill_process_and_children $JUPITER_PID
     echo "Restarting processes..."
     continue
