@@ -36,6 +36,8 @@ cp *.json ~/jup
 cp *.js ~/jup
 cd ~/jup
 npm install
+cd ~/
+git clone https://github.com/SaoXuan/rust-mev-bot-shared
 
 # Create IP sets script
 cat > ~/create_ipsets.sh << 'EOL'
