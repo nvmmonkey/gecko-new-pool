@@ -38,6 +38,8 @@ cd ~/jup
 npm install
 cd ~/
 git clone https://github.com/SaoXuan/rust-mev-bot-shared
+cp cd gecko-new-pool/util/rust-run.sh ~/rust-mev-bot-shared
+cd ~/
 
 # Create IP sets script
 cat > ~/create_ipsets.sh << 'EOL'
