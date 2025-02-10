@@ -11,14 +11,20 @@ async function filterRpcEndpoints() {
 
     const data = JSON.parse(rawData);
 
-    // Filter and map nodes to include rpc, version, gossip, and pubkey
-    const nodes = data.result
-      .filter((node) => node.rpc !== null)
+    // Use the data directly as it is an array
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid data format: expected an array.");
+    }
+
+    // Filter and map nodes to include rpc, version, gossip, pubkey, and stake (only if stake is not 0)
+    const nodes = data
+      .filter((node) => node.rpc !== null && node.stake !== 0)
       .map((node) => ({
         rpc: node.rpc,
         version: node.version,
         gossip: node.gossip,
         pubkey: node.pubkey,
+        stake: node.stake,
       }));
 
     // Create the output object
