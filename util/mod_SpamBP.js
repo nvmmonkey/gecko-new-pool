@@ -14,19 +14,23 @@ async function askQuestion(question) {
 }
 
 async function findConfigFiles(currentPath) {
-  const files = await fs.readdir(currentPath, { withFileTypes: true });
-  let configFiles = [];
-  
-  for (const file of files) {
-    const fullPath = path.join(currentPath, file.name);
-    if (file.isDirectory()) {
-      configFiles = configFiles.concat(await findConfigFiles(fullPath));
-    } else if (file.name.startsWith('config') && 
-              (file.name.endsWith('.yml') || file.name.endsWith('.yaml'))) {
-      configFiles.push(fullPath);
+  try {
+    const files = await fs.readdir(currentPath, { withFileTypes: true });
+    let configFiles = [];
+    
+    for (const file of files) {
+      const fullPath = path.join(currentPath, file.name);
+      if (file.isDirectory()) {
+        configFiles = configFiles.concat(await findConfigFiles(fullPath));
+      } else if (/^config(\.[a-zA-Z0-9]+)*\.yaml$/.test(file.name)) {
+        configFiles.push(fullPath);
+      }
     }
+    return configFiles;
+  } catch (error) {
+    console.error(`Error reading directory ${currentPath}:`, error.message);
+    return [];
   }
-  return configFiles;
 }
 
 function formatNumber(number) {
@@ -97,29 +101,31 @@ async function modifyConfigs() {
       configs[file] = yaml.load(content);
     }
 
-    const totalEntries = await displayConfigTable(configs);
-    const modifyAll = await askQuestion('\nDo you want to modify all settings? (y/n): ');
+    // Prompt user for which config to modify
+    const configOptions = ['STATIC_TIP_BP', 'TEMPORAL_DYNAMIC_FEE_BP', 'FAST_DYNAMIC_FEE_BP', 'NEXTBLOCK_DYNAMIC_FEE_BP', 'BLOXROUTE_DYNAMIC_FEE_BP'];
+    console.log('Which configuration do you want to modify?');
+    configOptions.forEach((option, index) => {
+      console.log(`${index + 1}. ${option}`);
+    });
+
+    const selectedOptionIndex = parseInt(await askQuestion(`Select an option (1-${configOptions.length}): `));
+    if (selectedOptionIndex < 1 || selectedOptionIndex > configOptions.length) {
+      console.log('Invalid option selected');
+      rl.close();
+      return;
+    }
+
+    const selectedOption = configOptions[selectedOptionIndex - 1];
+    const modifyAll = await askQuestion(`Do you want to modify all settings for ${selectedOption}? (y/n): `);
 
     if (modifyAll.toLowerCase() === 'y') {
       const newValue = parseInt((await askQuestion('Enter new BP value: ')).replace(/_/g, ''));
       
       for (const [filePath, config] of Object.entries(configs)) {
-        if (config.JITO?.STATIC_TIP_BP) {
-          await writeYamlFile(filePath, originalContents[filePath], 'STATIC_TIP_BP:', newValue);
+        if (config.JITO?.[selectedOption]) {
+          await writeYamlFile(filePath, originalContents[filePath], `${selectedOption}:`, newValue);
         }
-        if (config.TEMPORAL?.TEMPORAL_DYNAMIC_FEE_BP) {
-          await writeYamlFile(filePath, originalContents[filePath], 'TEMPORAL_DYNAMIC_FEE_BP:', newValue);
-        }
-        if (config.FAST?.FAST_DYNAMIC_FEE_BP) {
-          await writeYamlFile(filePath, originalContents[filePath], 'FAST_DYNAMIC_FEE_BP:', newValue);
-        }
-        if (config.NEXTBLOCK?.NEXTBLOCK_DYNAMIC_FEE_BP) {
-          await writeYamlFile(filePath, originalContents[filePath], 'NEXTBLOCK_DYNAMIC_FEE_BP:', newValue);
-        }
-        if (config.BLOXROUTE?.BLOXROUTE_DYNAMIC_FEE_BP) {
-          await writeYamlFile(filePath, originalContents[filePath], 'BLOXROUTE_DYNAMIC_FEE_BP:', newValue);
-        }
-        console.log(`Updated ${filePath}`);
+        // Add similar checks for other config options as needed
       }
     } else {
       const selectedIndex = parseInt(await askQuestion(`\nSelect index to modify (1-${totalEntries}): `));
