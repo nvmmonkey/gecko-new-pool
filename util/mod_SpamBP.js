@@ -80,7 +80,7 @@ async function writeYamlFile(filePath, content, setting, newValue) {
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles('~/');
+    const configFiles = await findConfigFiles('/');
     if (configFiles.length === 0) {
       console.log('No config files found');
       rl.close();
