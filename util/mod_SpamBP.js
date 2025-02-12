@@ -117,8 +117,18 @@ async function modifyConfigs() {
 
     const selectedOption = configOptions[selectedOptionIndex - 1];
 
-    // Display the current configuration table for all options
-    const totalEntries = await displayConfigTable(configs);
+    // Filter configs to only show the selected option
+    const filteredConfigs = {};
+    for (const [filePath, config] of Object.entries(configs)) {
+      filteredConfigs[filePath] = {};
+      if (config.JITO?.[selectedOption]) {
+        filteredConfigs[filePath][selectedOption] = config.JITO[selectedOption];
+      }
+      // Add similar checks for other config options as needed
+    }
+
+    // Display the current configuration table for the selected option
+    const totalEntries = await displayConfigTable(filteredConfigs);
 
     const modifyAll = await askQuestion(`Do you want to modify all settings for ${selectedOption}? (y/n): `);
 
