@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const yaml = require('js-yaml');
 const readline = require('readline');
+const os = require('os');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -80,7 +81,8 @@ async function writeYamlFile(filePath, content, setting, newValue) {
 
 async function modifyConfigs() {
   try {
-    const configFiles = await findConfigFiles('/');
+    const homeDir = os.homedir();
+    const configFiles = await findConfigFiles(homeDir);
     if (configFiles.length === 0) {
       console.log('No config files found');
       rl.close();
