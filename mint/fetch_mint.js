@@ -5,15 +5,15 @@ import readline from 'readline';
 // List of addresses to track
 const ADDRESSES_TO_TRACK = [
     "HJLqkCFiNMUsXvqA9btLXFwKpWgCAXXXmNBFnSELvXSC",
-    "7dGrdJRYtsNR8UYxZ3TnifXGjGc9eRYLq9sELwYpuuUu"
-    // "GC5vQ14nKCmtGRY6AmPPmrZwNqpCxvfLHXScNpLGTBVN",
-    // "8pY1AukbuPgUE3EetyLa59rFLMimJGT94ZzbMEZcQF4w",
-    // "G8NtWGr8yEyhUkYcjAqsK8seYtE5FgYVV2BHjiHGdLBB",
-    // "55NQkFDwwW8noThkL9Rd5ngbgUU36fYZeos1k5ZwjGdn",
-    // "CEEXTqHaqbVriXoW4uvdaPShkMaHg9AWnFXLS1nS887C",
-    // "K1tChn2NETQd9cCHe1UmUyWP3rDA92gP1dH4nNyEJrx",
-    // "Fw7oGoK5gbWZ1Aj4QLa39TnePJzK5N6hwBbknKpicLt1",
-    // "E8bTgCfQLMSrJ6wPaq3GsRaGopzNzGL7RPCUYqRUHSFM"
+    "7dGrdJRYtsNR8UYxZ3TnifXGjGc9eRYLq9sELwYpuuUu",
+    "GC5vQ14nKCmtGRY6AmPPmrZwNqpCxvfLHXScNpLGTBVN",
+    "8pY1AukbuPgUE3EetyLa59rFLMimJGT94ZzbMEZcQF4w",
+    "G8NtWGr8yEyhUkYcjAqsK8seYtE5FgYVV2BHjiHGdLBB",
+    "55NQkFDwwW8noThkL9Rd5ngbgUU36fYZeos1k5ZwjGdn",
+    "CEEXTqHaqbVriXoW4uvdaPShkMaHg9AWnFXLS1nS887C",
+    "K1tChn2NETQd9cCHe1UmUyWP3rDA92gP1dH4nNyEJrx",
+    "Fw7oGoK5gbWZ1Aj4QLa39TnePJzK5N6hwBbknKpicLt1",
+    "E8bTgCfQLMSrJ6wPaq3GsRaGopzNzGL7RPCUYqRUHSFM"
 ];
 
 // RPC endpoint configuration
