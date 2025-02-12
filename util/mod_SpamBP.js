@@ -37,32 +37,17 @@ function formatNumber(number) {
   return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '_');
 }
 
-async function displayConfigTable(configs) {
+async function displayConfigTable(configs, selectedOption) {
   console.log('\n| Index | File Path | Setting | Current Value |');
   console.log('|--------|-----------|----------|---------------|');
   
   let index = 1;
   for (const [filePath, config] of Object.entries(configs)) {
-    if (config.JITO?.STATIC_TIP_BP) {
-      console.log(`| ${index} | ${filePath} | STATIC_TIP_BP | ${config.JITO.STATIC_TIP_BP} |`);
+    if (config.JITO?.[selectedOption]) {
+      console.log(`| ${index} | ${filePath} | ${selectedOption} | ${config.JITO[selectedOption]} |`);
       index++;
     }
-    if (config.TEMPORAL?.TEMPORAL_DYNAMIC_FEE_BP) {
-      console.log(`| ${index} | ${filePath} | TEMPORAL_DYNAMIC_FEE_BP | ${config.TEMPORAL.TEMPORAL_DYNAMIC_FEE_BP} |`);
-      index++;
-    }
-    if (config.FAST?.FAST_DYNAMIC_FEE_BP) {
-      console.log(`| ${index} | ${filePath} | FAST_DYNAMIC_FEE_BP | ${config.FAST.FAST_DYNAMIC_FEE_BP} |`);
-      index++;
-    }
-    if (config.NEXTBLOCK?.NEXTBLOCK_DYNAMIC_FEE_BP) {
-      console.log(`| ${index} | ${filePath} | NEXTBLOCK_DYNAMIC_FEE_BP | ${config.NEXTBLOCK.NEXTBLOCK_DYNAMIC_FEE_BP} |`);
-      index++;
-    }
-    if (config.BLOXROUTE?.BLOXROUTE_DYNAMIC_FEE_BP) {
-      console.log(`| ${index} | ${filePath} | BLOXROUTE_DYNAMIC_FEE_BP | ${config.BLOXROUTE.BLOXROUTE_DYNAMIC_FEE_BP} |`);
-      index++;
-    }
+    // Add similar checks for other config options as needed
   }
   return index - 1;
 }
@@ -117,18 +102,8 @@ async function modifyConfigs() {
 
     const selectedOption = configOptions[selectedOptionIndex - 1];
 
-    // Filter configs to only show the selected option
-    const filteredConfigs = {};
-    for (const [filePath, config] of Object.entries(configs)) {
-      filteredConfigs[filePath] = {};
-      if (config.JITO?.[selectedOption]) {
-        filteredConfigs[filePath][selectedOption] = config.JITO[selectedOption];
-      }
-      // Add similar checks for other config options as needed
-    }
-
     // Display the current configuration table for the selected option
-    const totalEntries = await displayConfigTable(filteredConfigs);
+    const totalEntries = await displayConfigTable(configs, selectedOption);
 
     const modifyAll = await askQuestion(`Do you want to modify all settings for ${selectedOption}? (y/n): `);
 
