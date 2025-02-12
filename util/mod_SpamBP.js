@@ -116,6 +116,10 @@ async function modifyConfigs() {
     }
 
     const selectedOption = configOptions[selectedOptionIndex - 1];
+
+    // Display the current configuration table for all options
+    const totalEntries = await displayConfigTable(configs);
+
     const modifyAll = await askQuestion(`Do you want to modify all settings for ${selectedOption}? (y/n): `);
 
     if (modifyAll.toLowerCase() === 'y') {
