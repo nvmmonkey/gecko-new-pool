@@ -59,6 +59,10 @@ declare -A URL_IPSETS=(
     ["newest-withered-film.solana-mainnet.quiknode.pro"]="quiknode_newest"
     ["benedicta-vntcm3-fast-mainnet.helius-rpc.com"]="helius_benedicta"
     ["mainnet.helius-rpc.com"]="helius_mainnet"
+    ["rochell-medfy8-fast-mainnet.helius-rpc.com"]="helius_rochell"
+    ["astrid-1a3mps-fast-mainnet.helius-rpc.com"]="helius_astrid"
+    ["carma-qqy5fq-fast-mainnet.helius-rpc.com"]="helius_carma"
+    ["carole-l8ne8x-fast-mainnet.helius-rpc.com"]="helius_carole"
 )
 
 for URL in "${!URL_IPSETS[@]}"; do
