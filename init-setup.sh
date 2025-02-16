@@ -73,23 +73,26 @@ for URL in "${!URL_IPSETS[@]}"; do
         sudo ipset create "$IPSET_NAME" hash:ip
     fi
     
-    echo "Pinging $URL..."
-    PING_RESULT=$(ping -c 1 "$URL" | grep "PING")
-    if [[ -z $PING_RESULT ]]; then
-        echo "Failed to reach $URL. Skipping."
-        continue
-    fi
-    
-    RESOLVED_IP=$(echo "$PING_RESULT" | awk '{print $3}' | tr -d '()' | sed 's/:$//')
+    echo "Resolving $URL..."
+    RESOLVED_IP=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' \
+        "https://$URL" \
+        -w "%{remote_ip}" \
+        -o /dev/null)
     
     if [[ -n $RESOLVED_IP ]]; then
         echo "Resolved $URL to IP: $RESOLVED_IP"
+        echo "HTTP Status: $(curl -s -o /dev/null -w "%{http_code}" "https://$URL")"
         echo "Flushing and updating ipset: $IPSET_NAME"
         sudo ipset flush "$IPSET_NAME"
         sudo ipset add "$IPSET_NAME" "$RESOLVED_IP"
     else
         echo "Failed to resolve IP for $URL. Skipping."
     fi
+    
+    # Add a small delay to prevent rate limiting
+    sleep 1
 done
 
 echo "IP sets updated successfully."
