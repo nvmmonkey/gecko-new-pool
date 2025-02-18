@@ -13,7 +13,8 @@ const ADDRESSES_TO_TRACK = [
     "CEEXTqHaqbVriXoW4uvdaPShkMaHg9AWnFXLS1nS887C",
     "K1tChn2NETQd9cCHe1UmUyWP3rDA92gP1dH4nNyEJrx",
     "Fw7oGoK5gbWZ1Aj4QLa39TnePJzK5N6hwBbknKpicLt1",
-    "E8bTgCfQLMSrJ6wPaq3GsRaGopzNzGL7RPCUYqRUHSFM"
+    "E8bTgCfQLMSrJ6wPaq3GsRaGopzNzGL7RPCUYqRUHSFM",
+    "55NQkFDwwW8noThkL9Rd5ngbgUU36fYZeos1k5ZwjGdn" //top meme 3hop
 ];
 
 // RPC endpoint configuration
