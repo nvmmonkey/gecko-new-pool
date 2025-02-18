@@ -18,6 +18,7 @@ declare -A URL_IPSETS=(
     ["astrid-1a3mps-fast-mainnet.helius-rpc.com"]="helius_astrid"
     ["carma-qqy5fq-fast-mainnet.helius-rpc.com"]="helius_carma"
     ["carole-l8ne8x-fast-mainnet.helius-rpc.com"]="helius_carole"
+    ["acc.solayer.org"]="solayer_mainnet"
 )
 
 for URL in "${!URL_IPSETS[@]}"; do
