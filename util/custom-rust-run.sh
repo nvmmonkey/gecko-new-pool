@@ -232,8 +232,14 @@ trap cleanup_and_exit SIGINT SIGTERM SIGHUP INT
 # 主循环
 run_main_loop() {
     while true; do
+        # Copy token-cache.json
+        cp ~/jup/token-cache.json ./
+        log_info "复制token-cache成功"
+        cp ~/jup/minfile.json ./
+        
         init_environment
         start_service
+
         
         local interval
         interval=$(get_restart_interval)
@@ -245,8 +251,7 @@ run_main_loop() {
         
         sleep "${interval}m"
         cleanup_for_restart
-        # Copy token-cache.json
-        cp ~/jup/token-cache.json ./
+
     done
 }
 

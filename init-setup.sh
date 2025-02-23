@@ -38,8 +38,11 @@ cd ~/jup
 npm install
 cd ~/
 git clone https://github.com/SaoXuan/rust-mev-bot-shared
-cp cd gecko-new-pool/util/rust-run.sh ~/rust-mev-bot-shared
+cp cd gecko-new-pool/util/custom-rust-run.sh ~/rust-mev-bot-shared/
 cd ~/
+
+tmux new-session -d -s jup
+tmux new-session -d -s bot
 
 # Create IP sets script
 cat > ~/create_ipsets.sh << 'EOL'
