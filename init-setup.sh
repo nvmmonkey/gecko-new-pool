@@ -19,8 +19,8 @@ mkdir -p ~/jup
 cd ~/jup
 
 # Download and extract the bot
-wget https://sourceforge.net/projects/solanamevbot/files/solana-mev-bot-1.1.0.zip
-unzip solana-mev-bot-1.1.0.zip
+wget https://sourceforge.net/projects/solanamevbot/files/solana-mev-bot-1.3.23.zip
+unzip solana-mev-bot-1.3.23.zip
 
 # Run upgrade script if it exists
 if [ -f "./upgrade.sh" ]; then
