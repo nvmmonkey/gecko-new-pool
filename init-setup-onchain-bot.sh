@@ -19,5 +19,6 @@ if [ -f "./upgrade.sh" ]; then
 fi
 
 cd ~/
+tmux new-session -d -s onchain-bot
 
 echo "Onchain bot Installation completed."

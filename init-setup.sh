@@ -53,6 +53,8 @@ cd ~/
 
 tmux new-session -d -s jup
 tmux new-session -d -s bot
+tmux new-session -d -s rust-bot
+tmux new-session -d -s onchain-bot
 
 # Create IP sets script
 cat > ~/create_ipsets.sh << 'EOL'
