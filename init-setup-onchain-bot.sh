@@ -9,6 +9,7 @@ sudo apt update
 
 
 echo "Rust bot Installation completed."
+cd ~/
 mkdir onchain-bot
 cd onchain-bot
 wget https://sourceforge.net/projects/solanamevbotonchain/files/smb-onchain-0.0.5.zip
