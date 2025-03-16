@@ -40,6 +40,16 @@ cd ~/
 git clone https://github.com/SaoXuan/rust-mev-bot-shared
 cp cd gecko-new-pool/util/custom-rust-run.sh ~/rust-mev-bot-shared/
 cd ~/
+mkdir onchain-bot
+cd onchain-bot
+wget https://sourceforge.net/projects/solanamevbotonchain/files/smb-onchain-0.0.5.zip
+unzip smb-onchain-0.0.5.zip
+if [ -f "./upgrade.sh" ]; then
+    chmod +x ./upgrade.sh
+    ./upgrade.sh
+fi
+
+cd ~/
 
 tmux new-session -d -s jup
 tmux new-session -d -s bot
