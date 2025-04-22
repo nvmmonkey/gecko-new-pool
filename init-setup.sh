@@ -32,7 +32,7 @@ fi
 sudo ufw allow ssh
 sudo ufw allow from 127.0.0.1 to any port 18080
 sudo ufw deny 18080
-sudo ufw enable
+sudo ufw --force enable
 
 # Clone and setup gecko-new-pool
 cd ~/
