@@ -28,6 +28,12 @@ if [ -f "./upgrade.sh" ]; then
     ./upgrade.sh
 fi
 
+# Firewall
+sudo ufw allow ssh
+sudo ufw allow from 127.0.0.1 to any port 18080
+sudo ufw deny 18080
+sudo ufw enable
+
 # Clone and setup gecko-new-pool
 cd ~/
 git clone https://github.com/nvmmonkey/gecko-new-pool.git
