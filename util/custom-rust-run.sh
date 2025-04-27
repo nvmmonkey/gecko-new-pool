@@ -156,7 +156,14 @@ cleanup_for_restart() {
     # 只终止这个实例管理的进程
     for pid in "${CHILD_PIDS[@]}"; do
         if kill -0 $pid 2>/dev/null; then
-            kill -9 $pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM 以允许进程优雅退出
+            kill -15 $pid 2>/dev/null || true
+            # 等待一小段时间让进程退出
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $pid 2>/dev/null; then
+                kill -9 $pid 2>/dev/null || true
+            fi
         fi
     done
     
@@ -164,7 +171,13 @@ cleanup_for_restart() {
     if [ -f "$INSTANCE_RUST_PID_FILE" ]; then
         local rust_pid=$(cat "$INSTANCE_RUST_PID_FILE")
         if kill -0 $rust_pid 2>/dev/null; then
-            kill -9 $rust_pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM
+            kill -15 $rust_pid 2>/dev/null || true
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $rust_pid 2>/dev/null; then
+                kill -9 $rust_pid 2>/dev/null || true
+            fi
         fi
         rm -f "$INSTANCE_RUST_PID_FILE"
     fi
@@ -172,7 +185,13 @@ cleanup_for_restart() {
     if [ -f "$INSTANCE_JUPITER_PID_FILE" ]; then
         local jupiter_pid=$(cat "$INSTANCE_JUPITER_PID_FILE")
         if kill -0 $jupiter_pid 2>/dev/null; then
-            kill -9 $jupiter_pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM
+            kill -15 $jupiter_pid 2>/dev/null || true
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $jupiter_pid 2>/dev/null; then
+                kill -9 $jupiter_pid 2>/dev/null || true
+            fi
         fi
         rm -f "$INSTANCE_JUPITER_PID_FILE"
     fi
@@ -195,7 +214,14 @@ cleanup_and_exit() {
     # 只终止这个实例管理的进程
     for pid in "${CHILD_PIDS[@]}"; do
         if kill -0 $pid 2>/dev/null; then
-            kill -9 $pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM 以允许进程优雅退出
+            kill -15 $pid 2>/dev/null || true
+            # 等待一小段时间让进程退出
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $pid 2>/dev/null; then
+                kill -9 $pid 2>/dev/null || true
+            fi
         fi
     done
     
@@ -203,7 +229,13 @@ cleanup_and_exit() {
     if [ -f "$INSTANCE_RUST_PID_FILE" ]; then
         local rust_pid=$(cat "$INSTANCE_RUST_PID_FILE")
         if kill -0 $rust_pid 2>/dev/null; then
-            kill -9 $rust_pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM
+            kill -15 $rust_pid 2>/dev/null || true
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $rust_pid 2>/dev/null; then
+                kill -9 $rust_pid 2>/dev/null || true
+            fi
         fi
         rm -f "$INSTANCE_RUST_PID_FILE"
     fi
@@ -211,7 +243,13 @@ cleanup_and_exit() {
     if [ -f "$INSTANCE_JUPITER_PID_FILE" ]; then
         local jupiter_pid=$(cat "$INSTANCE_JUPITER_PID_FILE")
         if kill -0 $jupiter_pid 2>/dev/null; then
-            kill -9 $jupiter_pid 2>/dev/null || true
+            # 首先尝试发送 SIGTERM
+            kill -15 $jupiter_pid 2>/dev/null || true
+            sleep 1
+            # 如果进程仍然存在，使用 SIGKILL
+            if kill -0 $jupiter_pid 2>/dev/null; then
+                kill -9 $jupiter_pid 2>/dev/null || true
+            fi
         fi
         rm -f "$INSTANCE_JUPITER_PID_FILE"
     fi
