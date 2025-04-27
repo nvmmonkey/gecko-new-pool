@@ -4,6 +4,12 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
+# 生成唯一实例ID - 使用脚本路径和当前时间戳的哈希值
+INSTANCE_ID=$(echo "${SCRIPT_DIR}-$$-$(date +%s)" | md5sum | cut -d' ' -f1)
+INSTANCE_PID_FILE="${SCRIPT_DIR}/.instance_${INSTANCE_ID}.pid"
+INSTANCE_RUST_PID_FILE="${SCRIPT_DIR}/.rust_mev_bot_${INSTANCE_ID}.pid"
+INSTANCE_JUPITER_PID_FILE="${SCRIPT_DIR}/.jupiter_${INSTANCE_ID}.pid"
+
 # 颜色定义
 readonly COLOR_RED='\033[0;31m'
 readonly COLOR_GREEN='\033[0;32m'
@@ -147,22 +153,29 @@ cleanup_for_restart() {
     # 删除运行标记文件
     rm -f .jupiter_running 2>/dev/null
     
-    # 终止所有记录的子进程
+    # 只终止这个实例管理的进程
     for pid in "${CHILD_PIDS[@]}"; do
-        kill -9 $pid 2>/dev/null || true
+        if kill -0 $pid 2>/dev/null; then
+            kill -9 $pid 2>/dev/null || true
+        fi
     done
     
-    # 清理 Jupiter 相关进程
-  #  pkill -9 -f "jupiter-swap-api" 2>/dev/null || true
-   # pkill -9 -f "run-jup.sh" 2>/dev/null || true
-    pkill -9 -f "mints-query.sh" 2>/dev/null || true
-    pkill -9 -f "node.*jupiter" 2>/dev/null || true
+    # 清理这个实例的PID文件中记录的进程
+    if [ -f "$INSTANCE_RUST_PID_FILE" ]; then
+        local rust_pid=$(cat "$INSTANCE_RUST_PID_FILE")
+        if kill -0 $rust_pid 2>/dev/null; then
+            kill -9 $rust_pid 2>/dev/null || true
+        fi
+        rm -f "$INSTANCE_RUST_PID_FILE"
+    fi
     
-    # 清理 rust-mev-bot 进程
-    pkill -9 -f "rust-mev-bot" 2>/dev/null || true
-    
-    # 清理文件
-    rm -f jupiter.pid 2>/dev/null
+    if [ -f "$INSTANCE_JUPITER_PID_FILE" ]; then
+        local jupiter_pid=$(cat "$INSTANCE_JUPITER_PID_FILE")
+        if kill -0 $jupiter_pid 2>/dev/null; then
+            kill -9 $jupiter_pid 2>/dev/null || true
+        fi
+        rm -f "$INSTANCE_JUPITER_PID_FILE"
+    fi
     
     # 重置PID数组
     CHILD_PIDS=()
@@ -174,27 +187,37 @@ cleanup_for_restart() {
 # 清理函数 (用于 Ctrl+C)
 cleanup_and_exit() {
     echo ""
-    log_info "正在终止所有进程..."
+    log_info "正在终止这个实例的进程..."
     
     # 删除运行标记文件
     rm -f .jupiter_running 2>/dev/null
     
-    # 终止所有记录的子进程
+    # 只终止这个实例管理的进程
     for pid in "${CHILD_PIDS[@]}"; do
-        kill -9 $pid 2>/dev/null || true
+        if kill -0 $pid 2>/dev/null; then
+            kill -9 $pid 2>/dev/null || true
+        fi
     done
     
-    # 清理 Jupiter 相关进程
-  #  pkill -9 -f "jupiter-swap-api" 2>/dev/null || true
-   # pkill -9 -f "run-jup.sh" 2>/dev/null || true
-    pkill -9 -f "mints-query.sh" 2>/dev/null || true
-    pkill -9 -f "node.*jupiter" 2>/dev/null || true
+    # 清理这个实例的PID文件中记录的进程
+    if [ -f "$INSTANCE_RUST_PID_FILE" ]; then
+        local rust_pid=$(cat "$INSTANCE_RUST_PID_FILE")
+        if kill -0 $rust_pid 2>/dev/null; then
+            kill -9 $rust_pid 2>/dev/null || true
+        fi
+        rm -f "$INSTANCE_RUST_PID_FILE"
+    fi
     
-    # 清理 rust-mev-bot 进程
-    pkill -9 -f "rust-mev-bot" 2>/dev/null || true
+    if [ -f "$INSTANCE_JUPITER_PID_FILE" ]; then
+        local jupiter_pid=$(cat "$INSTANCE_JUPITER_PID_FILE")
+        if kill -0 $jupiter_pid 2>/dev/null; then
+            kill -9 $jupiter_pid 2>/dev/null || true
+        fi
+        rm -f "$INSTANCE_JUPITER_PID_FILE"
+    fi
     
-    # 清理文件
-    rm -f jupiter.pid 2>/dev/null
+    # 删除这个实例的PID文件
+    rm -f "$INSTANCE_PID_FILE"
     
     log_info "清理完成"
     exit 1
@@ -211,23 +234,37 @@ start_service() {
         # 启动 Jupiter 并记录 PID
         if [[ "${DEBUG:-false}" == "true" ]]; then
             DEBUG=true ./run-jup.sh --debug &
-            CHILD_PIDS+=($!)
+            local jupiter_pid=$!
+            CHILD_PIDS+=($jupiter_pid)
+            echo $jupiter_pid > "$INSTANCE_JUPITER_PID_FILE"
         else
             ./run-jup.sh &
-            CHILD_PIDS+=($!)
+            local jupiter_pid=$!
+            CHILD_PIDS+=($jupiter_pid)
+            echo $jupiter_pid > "$INSTANCE_JUPITER_PID_FILE"
         fi
         sleep 5
     fi
     
     # 启动 rust-mev-bot 并记录 PID
     ./rust-mev-bot &
-    CHILD_PIDS+=($!)
+    local rust_pid=$!
+    CHILD_PIDS+=($rust_pid)
+    echo $rust_pid > "$INSTANCE_RUST_PID_FILE"
     
     return 0
 }
 
 # 设置信号处理
 trap cleanup_and_exit SIGINT SIGTERM SIGHUP INT
+
+# 清理之前的实例PID文件
+cleanup_old_instances() {
+    # 清理超过1天的实例PID文件
+    find "$SCRIPT_DIR" -name ".instance_*.pid" -mtime +1 -delete 2>/dev/null
+    find "$SCRIPT_DIR" -name ".rust_mev_bot_*.pid" -mtime +1 -delete 2>/dev/null
+    find "$SCRIPT_DIR" -name ".jupiter_*.pid" -mtime +1 -delete 2>/dev/null
+}
 
 # 主循环
 run_main_loop() {
@@ -239,24 +276,33 @@ run_main_loop() {
         
         init_environment
         start_service
-
         
         local interval
         interval=$(get_restart_interval)
         
         if [[ "${DEBUG:-false}" == "true" ]] || [ "$interval" -eq 0 ]; then
-            wait
-            break
+            # 等待子进程，如果任何一个退出就重启
+            wait -n ${CHILD_PIDS[@]}
+            if [ "$interval" -eq 0 ]; then
+                break
+            fi
+            cleanup_for_restart
+            continue
         fi
         
         sleep "${interval}m"
         cleanup_for_restart
-
     done
 }
 
 # 主函数
 main() {
+    # 清理旧的实例文件
+    cleanup_old_instances
+    
+    # 写入当前实例的PID
+    echo $$ > "$INSTANCE_PID_FILE"
+    
     # 解析命令行参数
     while [[ $# -gt 0 ]]; do
         case $1 in
