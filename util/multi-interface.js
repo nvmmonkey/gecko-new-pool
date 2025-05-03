@@ -357,10 +357,14 @@ skip_preflight = true
 [jito]
 enabled = false
 block_engine_urls = [
-  "http://ny.mainnet.block-engine.jito.wtf/api/v1",
-  "http://slc.mainnet.block-engine.jito.wtf/api/v1",
-  "http://amsterdam.mainnet.block-engine.jito.wtf/api/v1",
+  "https://ny.mainnet.block-engine.jito.wtf/api/v1",
+  "https://slc.mainnet.block-engine.jito.wtf/api/v1",
+  "https://amsterdam.mainnet.block-engine.jito.wtf/api/v1",
+  "https://london.mainnet.block-engine.jito.wtf/api/v1",
+  "https://frankfurt.mainnet.block-engine.jito.wtf/api/v1",
+  "https://mainnet.block-engine.jito.wtf/api/v1",
 ]
+// ip_addresses = ["156.229.120.0/24"]
 [jito.tip_config]
 strategy = "Random"
 from = 6000
