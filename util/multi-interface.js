@@ -41,7 +41,7 @@ const CONFIG = {
     // Path to the TOML file
     filePath: "./config.low.toml",
     // Maximum number of pools to include in the TOML file per token
-    maxPools: 3,
+    maxPools: 2,
     // Priority order for DEXes (highest to lowest)
     dexPriority: ["pumpswap", "meteora", "raydium", "raydium-clmm"],
     // Maximum number of pools per DEX
