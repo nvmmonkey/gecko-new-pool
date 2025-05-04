@@ -67,15 +67,15 @@ const CONFIG = {
       options: {
         option1: {
           strategy: "Random",
-          from: 1051225,
-          to: 10051225,
-          count: 5,
+          from: 191225,
+          to: 98051225,
+          count: 10,
         },
         option2: {
           strategy: "Random",
-          from: 10051225,
-          to: 100051225,
-          count: 5,
+          from: 1051225,
+          to: 19051225,
+          count: 10,
         },
         option3: {
           strategy: "Random",
