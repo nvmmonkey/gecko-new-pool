@@ -9,6 +9,7 @@ import readline from "readline";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration object
+
 const CONFIG = {
   // Number of pages to fetch (max 10 per API docs)
   maxPages: 3,
@@ -28,9 +29,9 @@ const CONFIG = {
   // Time period for volume sorting: 'm5', 'm15', 'm30', 'h1', 'h6', 'h24'
   volumePeriod: "h24",
 
-  // Token filters - only show pools with SOL as base or quote token
+  // Token filters - now with option for WSOL or USDC as base token
   tokenFilters: {
-    // Default to SOL initially
+    // Default to filtering specific tokens
     requireSpecificToken: true,
     // The selected token type (will be set based on user input)
     selectedTokenType: "sol", // or "usdc"
@@ -138,6 +139,978 @@ function question(query) {
   });
 }
 
+async function displayMainMenu() {
+  let exit = false;
+
+  while (!exit) {
+    console.log("\n=== Main Menu ===");
+    console.log("1) Search and update (add tokens)");
+    console.log("2) Modify the config (view/delete tokens)");
+    console.log("3) Modify Spam settings");
+    console.log("4) Modify Jito settings");
+    console.log("5) Modify DEX pool quantities");
+    console.log("6) Modify Base Mint");
+    console.log("7) Exit program");
+
+    const choice = await question("Enter your choice (1-7): ");
+
+    switch (choice) {
+      case "1":
+        await searchAndUpdate();
+        break;
+      case "2":
+        await modifyConfig();
+        break;
+      case "3":
+        await modifySpamSettings();
+        break;
+      case "4":
+        await modifyJitoSettings();
+        break;
+      case "5":
+        await modifyPoolQuantities();
+        break;
+      case "6":
+        await modifyBaseMint();
+        break;
+      case "7":
+        exit = true;
+        console.log("Exiting program...");
+        break;
+      default:
+        console.log("Invalid choice. Please enter a number from 1 to 7.");
+    }
+  }
+}
+
+// Function for option 1: Search and update (existing functionality)
+async function searchAndUpdate() {
+  console.log("\n=== Search and Update Tokens ===");
+
+  // Ask for base token preference first
+  console.log("\n=== Base Token Configuration ===");
+  const baseTokenChoice = await question(
+    "Which token do you want to filter for? (1 for SOL, 2 for USDC): "
+  );
+
+  if (baseTokenChoice === "2") {
+    CONFIG.tokenFilters.selectedTokenType = "usdc";
+    console.log("Selected USDC as base token filter.");
+  } else {
+    CONFIG.tokenFilters.selectedTokenType = "sol";
+    console.log("Selected SOL as base token filter (default).");
+  }
+
+  // Read the TOML file first
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract existing tokens
+  const existingTokens = extractExistingTokens(tomlContent);
+  console.log(
+    `\nExisting tokens in config: ${
+      existingTokens.length > 0 ? existingTokens.join(", ") : "None"
+    }`
+  );
+
+  // Process all tokens
+  const processedTokens = [];
+  let continueAdding = true;
+
+  // First, process a new token
+  let tokenAddress = process.argv[2];
+  if (!tokenAddress) {
+    tokenAddress = await question(
+      "Enter the token address or symbol you want to search for: "
+    );
+
+    if (!tokenAddress) {
+      console.log("No token address provided. Returning to main menu.");
+      return;
+    }
+  }
+
+  // Process the first token
+  const tokenResult = await processToken(tokenAddress);
+  if (tokenResult) {
+    processedTokens.push(tokenResult);
+  } else {
+    return;
+  }
+
+  // Get user configuration choices for the first token
+  const userConfig = await getUserConfig();
+
+  // Ask if user wants to add more tokens
+  while (continueAdding) {
+    const addMore = await question(
+      "\nDo you want to add another token? (yes/no): "
+    );
+    if (addMore.toLowerCase() !== "yes" && addMore.toLowerCase() !== "y") {
+      continueAdding = false;
+      continue;
+    }
+
+    const nextTokenAddress = await question(
+      "Enter the next token address or symbol: "
+    );
+    if (!nextTokenAddress) {
+      console.log("No token address provided. Skipping.");
+      continue;
+    }
+
+    // Skip if this token is already in the list
+    if (
+      processedTokens.some((t) => t.tokenAddress === nextTokenAddress) ||
+      existingTokens.includes(nextTokenAddress)
+    ) {
+      console.log(
+        `Token ${nextTokenAddress} is already in the configuration. Skipping.`
+      );
+      continue;
+    }
+
+    // Process the next token
+    const nextTokenResult = await processToken(nextTokenAddress);
+    if (nextTokenResult) {
+      processedTokens.push(nextTokenResult);
+    }
+  }
+
+  // Update TOML file for each token
+  let updatedContent = tomlContent;
+  let tokenCount = existingTokens.length;
+
+  for (const token of processedTokens) {
+    const result = await updateTomlFile(
+      updatedContent,
+      token.tokenAddress,
+      token.selectedPools,
+      userConfig
+    );
+    updatedContent = result.updatedContent;
+    tokenCount = result.tokenCount;
+  }
+
+  // Write the updated TOML file
+  const writeResult = await writeTomlFile(
+    CONFIG.tomlConfig.filePath,
+    updatedContent
+  );
+  console.log(`\n${writeResult}`);
+
+  // Output summary of updates
+  console.log(
+    `\nSUCCESS: TOML file updated with ${processedTokens.length} new tokens`
+  );
+  console.log(`Total tokens in configuration: ${tokenCount}`);
+  console.log(`merge_mints set to: ${tokenCount > 1 ? "true" : "false"}`);
+
+  processedTokens.forEach((token) => {
+    console.log(
+      `\n- ${token.tokenSymbol} (${token.tokenAddress}): ${token.totalSelectedPools} pools`
+    );
+    Object.keys(token.selectedPools).forEach((dex) => {
+      console.log(
+        `  ${getDexName(dex, token.filteredData.included)}: ${
+          token.selectedPools[dex].length
+        } pools`
+      );
+    });
+  });
+
+  // Display user configuration settings
+  console.log("\nConfiguration Settings:");
+  console.log(
+    `- Base token filter: ${CONFIG.tokenFilters.selectedTokenType.toUpperCase()}`
+  );
+  console.log(`- Jito enabled: ${userConfig.jito.enabled ? "Yes" : "No"}`);
+  if (userConfig.jito.enabled && userConfig.jito.selectedOption) {
+    console.log(`  Strategy: ${userConfig.jito.selectedOption.strategy}`);
+    console.log(`  From: ${userConfig.jito.selectedOption.from}`);
+    console.log(`  To: ${userConfig.jito.selectedOption.to}`);
+    console.log(`  Count: ${userConfig.jito.selectedOption.count}`);
+  }
+
+  console.log(`- Spam enabled: ${userConfig.spam.enabled ? "Yes" : "No"}`);
+  if (userConfig.spam.enabled && userConfig.spam.selectedOption) {
+    console.log(`  Strategy: ${userConfig.spam.selectedOption.strategy}`);
+    console.log(`  From: ${userConfig.spam.selectedOption.from}`);
+    console.log(`  To: ${userConfig.spam.selectedOption.to}`);
+    console.log(`  Count: ${userConfig.spam.selectedOption.count}`);
+  }
+
+  console.log("- Lookup table accounts:");
+  const allAccounts = userConfig.lookupTableAccounts.default.concat(
+    userConfig.lookupTableAccounts.custom
+  );
+  allAccounts.forEach((account) => {
+    console.log(`  ${account}`);
+  });
+}
+
+// Function for option 2: Modify config (show and delete tokens)
+async function modifyConfig() {
+  console.log("\n=== Modify Configuration ===");
+
+  // Read the TOML file
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract existing tokens
+  const existingTokens = extractExistingTokens(tomlContent);
+
+  if (existingTokens.length === 0) {
+    console.log("No tokens found in the configuration file.");
+    return;
+  }
+
+  // Display tokens in a table format
+  console.log("\nCurrent tokens in configuration:");
+  console.log("------------------------------------------");
+  console.log("| Index | Token Address                              |");
+  console.log("------------------------------------------");
+
+  existingTokens.forEach((token, index) => {
+    console.log(
+      `| ${(index + 1).toString().padEnd(5)} | ${token.padEnd(42)} |`
+    );
+  });
+
+  console.log("------------------------------------------");
+
+  // Ask if the user wants to delete a token
+  const deleteToken = await question(
+    "\nDo you want to delete a token? (yes/no): "
+  );
+
+  if (
+    deleteToken.toLowerCase() === "yes" ||
+    deleteToken.toLowerCase() === "y"
+  ) {
+    const tokenIndexToDelete = await question(
+      "Enter the index of the token to delete: "
+    );
+    const index = parseInt(tokenIndexToDelete) - 1;
+
+    if (isNaN(index) || index < 0 || index >= existingTokens.length) {
+      console.log("Invalid index. No tokens deleted.");
+      return;
+    }
+
+    const tokenToDelete = existingTokens[index];
+
+    // Confirm deletion
+    const confirmDeletion = await question(
+      `Are you sure you want to delete token ${tokenToDelete}? (yes/no): `
+    );
+
+    if (
+      confirmDeletion.toLowerCase() === "yes" ||
+      confirmDeletion.toLowerCase() === "y"
+    ) {
+      // Remove the token from the TOML file
+      const updatedContent = removeTokenFromToml(tomlContent, tokenToDelete);
+
+      // Write the updated TOML file
+      await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+
+      console.log(
+        `\nToken ${tokenToDelete} has been removed from the configuration.`
+      );
+
+      // Re-read the file to check the updated token count
+      const newTomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+      const remainingTokens = extractExistingTokens(newTomlContent);
+
+      // Update merge_mints based on the remaining tokens
+      const mergeMintValue = remainingTokens.length > 1 ? "true" : "false";
+      let finalContent = newTomlContent;
+
+      const mergeMintRegex = /merge_mints = (true|false)/i;
+      const newMergeMint = `merge_mints = ${mergeMintValue}`;
+
+      if (mergeMintRegex.test(finalContent)) {
+        finalContent = finalContent.replace(mergeMintRegex, newMergeMint);
+        await writeTomlFile(CONFIG.tomlConfig.filePath, finalContent);
+      }
+
+      console.log(`Total tokens remaining: ${remainingTokens.length}`);
+      console.log(`merge_mints set to: ${mergeMintValue}`);
+    } else {
+      console.log("Deletion cancelled.");
+    }
+  }
+}
+
+// Function to remove a token from the TOML content
+function removeTokenFromToml(tomlContent, tokenAddress) {
+  // Regular expression to find the mint_config_list section for this token
+  const mintSectionRegex = new RegExp(
+    `\\[\\[routing\\.mint_config_list\\]\\][\\s\\S]*?mint = "${tokenAddress}"[\\s\\S]*?(?=\\[\\[routing\\.mint_config_list\\]\\]|$)`,
+    "i"
+  );
+
+  // Find the section for this token
+  const mintSection = tomlContent.match(mintSectionRegex);
+
+  if (mintSection) {
+    // Remove the section from the content
+    return tomlContent.replace(mintSectionRegex, "");
+  }
+
+  return tomlContent;
+}
+
+// Function for option 3: Modify Spam settings
+async function modifySpamSettings() {
+  console.log("\n=== Modify Spam Settings ===");
+
+  // Read the TOML file
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract current spam settings
+  const spamEnabledRegex = /\[spam\]\nenabled = (true|false)/i;
+  const spamEnabledMatch = tomlContent.match(spamEnabledRegex);
+
+  const computeUnitPriceRegex =
+    /compute_unit_price = \{ strategy = "([^"]+)", from = (\d+), to = (\d+), count = (\d+) \}/i;
+  const computeUnitPriceMatch = tomlContent.match(computeUnitPriceRegex);
+
+  // Display current settings
+  console.log("\nCurrent Spam Settings:");
+  console.log(
+    `- Enabled: ${spamEnabledMatch ? spamEnabledMatch[1] : "unknown"}`
+  );
+
+  if (computeUnitPriceMatch) {
+    console.log(`- Strategy: ${computeUnitPriceMatch[1]}`);
+    console.log(`- From: ${computeUnitPriceMatch[2]}`);
+    console.log(`- To: ${computeUnitPriceMatch[3]}`);
+    console.log(`- Count: ${computeUnitPriceMatch[4]}`);
+  }
+
+  // Ask for new settings
+  console.log("\nUpdate Spam Settings:");
+  const spamEnabled = await question("Enable spam? (yes/no): ");
+  const isSpamEnabled =
+    spamEnabled.toLowerCase() === "yes" || spamEnabled.toLowerCase() === "y";
+
+  let userConfig = {
+    spam: {
+      enabled: isSpamEnabled,
+      selectedOption: {
+        strategy: "Random",
+        from: 0,
+        to: 0,
+        count: 1,
+      },
+    },
+  };
+
+  if (isSpamEnabled) {
+    console.log("\nSelect a compute unit price strategy option:");
+    console.log("1. Random strategy, from 28311 to 488111, count 1");
+    console.log("2. Random strategy, from 218311 to 588111, count 1");
+    console.log("3. Custom values");
+
+    const spamOption = await question("Enter option number (1-3): ");
+
+    if (spamOption === "1") {
+      userConfig.spam.selectedOption = {
+        strategy: "Random",
+        from: 28311,
+        to: 488111,
+        count: 1,
+      };
+    } else if (spamOption === "2") {
+      userConfig.spam.selectedOption = {
+        strategy: "Random",
+        from: 218311,
+        to: 588111,
+        count: 1,
+      };
+    } else if (spamOption === "3") {
+      userConfig.spam.selectedOption.strategy = "Random";
+      userConfig.spam.selectedOption.from = parseInt(
+        await question('Enter "from" value: '),
+        10
+      );
+      userConfig.spam.selectedOption.to = parseInt(
+        await question('Enter "to" value: '),
+        10
+      );
+      userConfig.spam.selectedOption.count =
+        parseInt(await question('Enter "count" value: '), 10) || 1;
+    } else {
+      console.log("Invalid option. Using option 1 as default.");
+      userConfig.spam.selectedOption = {
+        strategy: "Random",
+        from: 28311,
+        to: 488111,
+        count: 1,
+      };
+    }
+  }
+
+  // Update spam.enabled
+  let updatedContent = tomlContent;
+  const spamEnabledString = `[spam]\nenabled = ${
+    userConfig.spam.enabled ? "true" : "false"
+  }`;
+  updatedContent = updatedContent.replace(spamEnabledRegex, spamEnabledString);
+
+  // Update compute_unit_price if spam is enabled
+  if (userConfig.spam.enabled) {
+    const selectedOption = userConfig.spam.selectedOption;
+    const newComputeUnitPrice = `compute_unit_price = { strategy = "${selectedOption.strategy}", from = ${selectedOption.from}, to = ${selectedOption.to}, count = ${selectedOption.count} }`;
+
+    updatedContent = updatedContent.replace(
+      computeUnitPriceRegex,
+      newComputeUnitPrice
+    );
+  }
+
+  // Write the updated TOML file
+  await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+
+  console.log("\nSpam settings updated successfully!");
+  console.log(`- Enabled: ${userConfig.spam.enabled ? "true" : "false"}`);
+
+  if (userConfig.spam.enabled) {
+    console.log(`- Strategy: ${userConfig.spam.selectedOption.strategy}`);
+    console.log(`- From: ${userConfig.spam.selectedOption.from}`);
+    console.log(`- To: ${userConfig.spam.selectedOption.to}`);
+    console.log(`- Count: ${userConfig.spam.selectedOption.count}`);
+  }
+}
+
+// Updated function for option 4: Modify Jito settings to include min_profit
+async function modifyJitoSettings() {
+  console.log("\n=== Modify Jito Settings ===");
+
+  // Read the TOML file
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract current Jito settings
+  const jitoEnabledRegex = /\[jito\]\nenabled = (true|false)/i;
+  const jitoEnabledMatch = tomlContent.match(jitoEnabledRegex);
+
+  const jitoTipConfigRegex =
+    /\[jito\.tip_config\]\nstrategy = "([^"]+)"\nfrom = (\d+)\nto = (\d+)\ncount = (\d+)/i;
+  const jitoTipConfigMatch = tomlContent.match(jitoTipConfigRegex);
+
+  // Extract min_profit setting
+  const minProfitRegex = /\[jito\][^\[]*min_profit = (\d+)/s;
+  const minProfitMatch = tomlContent.match(minProfitRegex);
+  const currentMinProfit = minProfitMatch ? parseInt(minProfitMatch[1]) : 17000;
+
+  // Display all current settings in a table
+  console.log("\nCurrent Jito Settings:");
+  console.log("---------------------------------------");
+  console.log(`Enabled: ${jitoEnabledMatch ? jitoEnabledMatch[1] : "unknown"}`);
+  console.log(`Min Profit: ${currentMinProfit}`);
+
+  if (jitoTipConfigMatch) {
+    console.log("\nTip Configuration:");
+    console.log(`Strategy: ${jitoTipConfigMatch[1]}`);
+    console.log(`From: ${jitoTipConfigMatch[2]}`);
+    console.log(`To: ${jitoTipConfigMatch[3]}`);
+    console.log(`Count: ${jitoTipConfigMatch[4]}`);
+  }
+  console.log("---------------------------------------");
+
+  // Ask for new settings
+  console.log("\nUpdate Jito Settings:");
+  console.log("1. Enable/Disable Jito");
+  console.log("2. Modify Min Profit");
+  console.log("3. Modify Tip Configuration");
+  console.log("4. Return to main menu");
+
+  const settingChoice = await question("Enter your choice (1-4): ");
+
+  let userConfig = {
+    jito: {
+      enabled: jitoEnabledMatch ? jitoEnabledMatch[1] === "true" : false,
+      minProfit: currentMinProfit,
+      selectedOption: jitoTipConfigMatch
+        ? {
+            strategy: jitoTipConfigMatch[1],
+            from: parseInt(jitoTipConfigMatch[2]),
+            to: parseInt(jitoTipConfigMatch[3]),
+            count: parseInt(jitoTipConfigMatch[4]),
+          }
+        : {
+            strategy: "Random",
+            from: 1051225,
+            to: 10051225,
+            count: 5,
+          },
+    },
+  };
+
+  if (settingChoice === "1") {
+    // Toggle Jito enabled state
+    const jitoEnabled = await question(
+      `Enable Jito? (current: ${
+        userConfig.jito.enabled ? "enabled" : "disabled"
+      }) (yes/no): `
+    );
+    userConfig.jito.enabled =
+      jitoEnabled.toLowerCase() === "yes" || jitoEnabled.toLowerCase() === "y";
+  } else if (settingChoice === "2") {
+    // Modify min profit
+    const newMinProfit = await question(
+      `Enter new Min Profit value (current: ${currentMinProfit}): `
+    );
+    if (newMinProfit && !isNaN(parseInt(newMinProfit))) {
+      userConfig.jito.minProfit = parseInt(newMinProfit);
+    } else {
+      console.log("Invalid value. Keeping current min profit.");
+    }
+  } else if (settingChoice === "3") {
+    // Modify tip configuration
+    if (userConfig.jito.enabled) {
+      console.log("\nSelect a Jito tip strategy option:");
+      console.log("1. Random strategy, from 1051225 to 10051225, count 5");
+      console.log("2. Random strategy, from 10051225 to 100051225, count 5");
+      console.log("3. Custom values");
+
+      const jitoOption = await question("Enter option number (1-3): ");
+
+      if (jitoOption === "1") {
+        userConfig.jito.selectedOption = {
+          strategy: "Random",
+          from: 1051225,
+          to: 10051225,
+          count: 5,
+        };
+      } else if (jitoOption === "2") {
+        userConfig.jito.selectedOption = {
+          strategy: "Random",
+          from: 10051225,
+          to: 100051225,
+          count: 5,
+        };
+      } else if (jitoOption === "3") {
+        userConfig.jito.selectedOption.strategy = "Random";
+        userConfig.jito.selectedOption.from = parseInt(
+          await question('Enter "from" value: '),
+          10
+        );
+        userConfig.jito.selectedOption.to = parseInt(
+          await question('Enter "to" value: '),
+          10
+        );
+        userConfig.jito.selectedOption.count = parseInt(
+          await question('Enter "count" value: '),
+          10
+        );
+      } else {
+        console.log("Invalid option. Using current configuration.");
+      }
+    } else {
+      console.log("Cannot modify tip configuration when Jito is disabled.");
+    }
+  } else if (settingChoice === "4") {
+    return;
+  } else {
+    console.log("Invalid choice. No changes made.");
+    return;
+  }
+
+  // Update TOML file with new settings
+  let updatedContent = tomlContent;
+
+  // Update jito.enabled
+  const jitoEnabledString = `[jito]\nenabled = ${
+    userConfig.jito.enabled ? "true" : "false"
+  }`;
+  if (jitoEnabledRegex.test(updatedContent)) {
+    updatedContent = updatedContent.replace(
+      jitoEnabledRegex,
+      jitoEnabledString
+    );
+  }
+
+  // Update min_profit
+  if (minProfitMatch) {
+    updatedContent = updatedContent.replace(
+      /min_profit = \d+/,
+      `min_profit = ${userConfig.jito.minProfit}`
+    );
+  } else {
+    // Add min_profit after the enabled line
+    updatedContent = updatedContent.replace(
+      /\[jito\]\nenabled = (true|false)/,
+      `[jito]\nenabled = ${
+        userConfig.jito.enabled ? "true" : "false"
+      }\nmin_profit = ${userConfig.jito.minProfit}`
+    );
+  }
+
+  // Update jito.tip_config if jito is enabled
+  if (userConfig.jito.enabled) {
+    const selectedOption = userConfig.jito.selectedOption;
+    const newJitoTipConfig = `[jito.tip_config]\nstrategy = "${selectedOption.strategy}"\nfrom = ${selectedOption.from}\nto = ${selectedOption.to}\ncount = ${selectedOption.count}`;
+
+    if (jitoTipConfigRegex.test(updatedContent)) {
+      updatedContent = updatedContent.replace(
+        jitoTipConfigRegex,
+        newJitoTipConfig
+      );
+    }
+  }
+
+  // Write the updated TOML file
+  await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+
+  // Display updated settings
+  console.log("\nJito settings updated successfully!");
+  console.log("---------------------------------------");
+  console.log(`Enabled: ${userConfig.jito.enabled ? "true" : "false"}`);
+  console.log(`Min Profit: ${userConfig.jito.minProfit}`);
+
+  if (userConfig.jito.enabled) {
+    console.log("\nTip Configuration:");
+    console.log(`Strategy: ${userConfig.jito.selectedOption.strategy}`);
+    console.log(`From: ${userConfig.jito.selectedOption.from}`);
+    console.log(`To: ${userConfig.jito.selectedOption.to}`);
+    console.log(`Count: ${userConfig.jito.selectedOption.count}`);
+  }
+  console.log("---------------------------------------");
+
+  // Ask if the user wants to modify more Jito settings
+  const modifyMore = await question(
+    "\nDo you want to modify more Jito settings? (yes/no): "
+  );
+
+  if (modifyMore.toLowerCase() === "yes" || modifyMore.toLowerCase() === "y") {
+    // Call the function recursively to modify more settings
+    return await modifyJitoSettings();
+  }
+}
+
+// Function for option 5: Modify DEX pool quantities
+async function modifyPoolQuantities() {
+  console.log("\n=== Modify DEX Pool Quantities ===");
+
+  // Display current settings in a table
+  console.log("\nCurrent Pool Configuration:");
+  console.log("---------------------------------------------------");
+  console.log("| Index | DEX            | Pools | Priority Order |");
+  console.log("---------------------------------------------------");
+
+  // Create an array of all settings for easier indexing
+  const poolSettings = [
+    { name: "Total Max Pools", value: CONFIG.tomlConfig.maxPools, type: "max" },
+  ];
+
+  // Add DEX-specific settings
+  CONFIG.tomlConfig.dexPriority.forEach((dex, index) => {
+    const quantity = CONFIG.tomlConfig.maxPoolsPerDex[dex] || 0;
+    const dexName = dex.charAt(0).toUpperCase() + dex.slice(1); // Capitalize first letter
+    poolSettings.push({
+      name: dexName,
+      value: quantity,
+      dexId: dex,
+      priority: index + 1,
+      type: "dex",
+    });
+  });
+
+  // Display the settings in a table
+  poolSettings.forEach((setting, index) => {
+    if (setting.type === "max") {
+      console.log(
+        `| ${(index + 1).toString().padStart(5)} | ${"Total Max Pools".padEnd(
+          14
+        )} | ${setting.value.toString().padEnd(5)} | ${"N/A".padEnd(14)} |`
+      );
+    } else {
+      console.log(
+        `| ${(index + 1).toString().padStart(5)} | ${setting.name.padEnd(
+          14
+        )} | ${setting.value.toString().padEnd(5)} | ${setting.priority
+          .toString()
+          .padEnd(14)} |`
+      );
+    }
+  });
+
+  console.log("---------------------------------------------------");
+
+  // Ask if user wants to modify the settings
+  const modifySettings = await question(
+    "\nDo you want to modify these settings? (yes/no): "
+  );
+
+  if (
+    modifySettings.toLowerCase() === "yes" ||
+    modifySettings.toLowerCase() === "y"
+  ) {
+    // Ask which setting to modify
+    const settingIndex = await question(
+      "Enter index of setting to modify (or 'p' to modify priority order): "
+    );
+
+    if (settingIndex.toLowerCase() === "p") {
+      // Modify priority order
+      console.log(
+        "\nCurrent priority order: " + CONFIG.tomlConfig.dexPriority.join(", ")
+      );
+
+      // Show current order in a table
+      console.log("\n---------------------------");
+      console.log("| Index | DEX            |");
+      console.log("---------------------------");
+      CONFIG.tomlConfig.dexPriority.forEach((dex, index) => {
+        const dexName = dex.charAt(0).toUpperCase() + dex.slice(1); // Capitalize first letter
+        console.log(
+          `| ${(index + 1).toString().padStart(5)} | ${dexName.padEnd(14)} |`
+        );
+      });
+      console.log("---------------------------");
+
+      // Allow user to rearrange priority by swapping positions
+      let modifyingPriority = true;
+      while (modifyingPriority) {
+        console.log(
+          "\nTo swap positions, enter two indices separated by comma (e.g., '1,3')"
+        );
+        console.log("To finish modifying priority, enter 'done'");
+
+        const priorityInput = await question("Enter swap indices or 'done': ");
+
+        if (priorityInput.toLowerCase() === "done") {
+          modifyingPriority = false;
+        } else {
+          const indices = priorityInput
+            .split(",")
+            .map((i) => parseInt(i.trim()) - 1);
+
+          if (
+            indices.length === 2 &&
+            !isNaN(indices[0]) &&
+            !isNaN(indices[1]) &&
+            indices[0] >= 0 &&
+            indices[0] < CONFIG.tomlConfig.dexPriority.length &&
+            indices[1] >= 0 &&
+            indices[1] < CONFIG.tomlConfig.dexPriority.length
+          ) {
+            // Swap the DEXes in priority array
+            const temp = CONFIG.tomlConfig.dexPriority[indices[0]];
+            CONFIG.tomlConfig.dexPriority[indices[0]] =
+              CONFIG.tomlConfig.dexPriority[indices[1]];
+            CONFIG.tomlConfig.dexPriority[indices[1]] = temp;
+
+            // Display the updated order
+            console.log("\nUpdated priority order:");
+            console.log("---------------------------");
+            console.log("| Index | DEX            |");
+            console.log("---------------------------");
+            CONFIG.tomlConfig.dexPriority.forEach((dex, index) => {
+              const dexName = dex.charAt(0).toUpperCase() + dex.slice(1); // Capitalize first letter
+              console.log(
+                `| ${(index + 1).toString().padStart(5)} | ${dexName.padEnd(
+                  14
+                )} |`
+              );
+            });
+            console.log("---------------------------");
+          } else {
+            console.log("Invalid indices. Please enter two valid indices.");
+          }
+        }
+      }
+    } else {
+      // Modify pool quantity
+      const index = parseInt(settingIndex) - 1;
+
+      if (!isNaN(index) && index >= 0 && index < poolSettings.length) {
+        const setting = poolSettings[index];
+
+        const newValue = await question(
+          `Enter new value for ${setting.name} (current: ${setting.value}): `
+        );
+
+        if (newValue && !isNaN(parseInt(newValue))) {
+          const value = parseInt(newValue);
+
+          if (setting.type === "max") {
+            CONFIG.tomlConfig.maxPools = value;
+          } else if (setting.type === "dex") {
+            CONFIG.tomlConfig.maxPoolsPerDex[setting.dexId] = value;
+          }
+
+          console.log(`Updated ${setting.name} to ${value}`);
+        } else {
+          console.log("Invalid value. No changes made.");
+        }
+      } else {
+        console.log("Invalid index. No changes made.");
+      }
+
+      // Ask if the user wants to modify more settings
+      const modifyMore = await question(
+        "\nDo you want to modify more settings? (yes/no): "
+      );
+
+      if (
+        modifyMore.toLowerCase() === "yes" ||
+        modifyMore.toLowerCase() === "y"
+      ) {
+        // Call the function recursively to modify more settings
+        return await modifyPoolQuantities();
+      }
+    }
+
+    // Display updated settings
+    console.log("\nUpdated Pool Configuration:");
+    console.log("---------------------------------------------------");
+    console.log("| Index | DEX            | Pools | Priority Order |");
+    console.log("---------------------------------------------------");
+
+    // Rebuild the settings array with updated values
+    const updatedSettings = [
+      {
+        name: "Total Max Pools",
+        value: CONFIG.tomlConfig.maxPools,
+        type: "max",
+      },
+    ];
+
+    CONFIG.tomlConfig.dexPriority.forEach((dex, index) => {
+      const quantity = CONFIG.tomlConfig.maxPoolsPerDex[dex] || 0;
+      const dexName = dex.charAt(0).toUpperCase() + dex.slice(1);
+      updatedSettings.push({
+        name: dexName,
+        value: quantity,
+        dexId: dex,
+        priority: index + 1,
+        type: "dex",
+      });
+    });
+
+    updatedSettings.forEach((setting, index) => {
+      if (setting.type === "max") {
+        console.log(
+          `| ${(index + 1).toString().padStart(5)} | ${"Total Max Pools".padEnd(
+            14
+          )} | ${setting.value.toString().padEnd(5)} | ${"N/A".padEnd(14)} |`
+        );
+      } else {
+        console.log(
+          `| ${(index + 1).toString().padStart(5)} | ${setting.name.padEnd(
+            14
+          )} | ${setting.value.toString().padEnd(5)} | ${setting.priority
+            .toString()
+            .padEnd(14)} |`
+        );
+      }
+    });
+
+    console.log("---------------------------------------------------");
+    console.log("\nPool quantity settings updated successfully!");
+    console.log("These settings will be applied for future token searches.");
+  }
+}
+
+// Function for option 6: Modify Base Mint
+async function modifyBaseMint() {
+  console.log("\n=== Modify Base Mint ===");
+
+  // Read the TOML file
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract current base_mint setting
+  const baseMintRegex = /\[bot\][^\[]*base_mint\s*=\s*"([^"]+)"/s;
+  const baseMintMatch = tomlContent.match(baseMintRegex);
+
+  const currentBaseMint = baseMintMatch
+    ? baseMintMatch[1]
+    : "So11111111111111111111111111111111111111112";
+
+  // Display current setting
+  console.log("\nCurrent Base Mint Setting:");
+  console.log("-----------------------------------------------");
+  console.log(`Base Mint: ${currentBaseMint}`);
+  console.log("Default: So11111111111111111111111111111111111111112 (SOL)");
+  console.log(
+    "Common alternatives: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v (USDC)"
+  );
+  console.log("-----------------------------------------------");
+
+  // Ask if user wants to change the base mint
+  const modifyBaseMint = await question(
+    "\nDo you want to modify the base mint? (yes/no): "
+  );
+
+  if (
+    modifyBaseMint.toLowerCase() === "yes" ||
+    modifyBaseMint.toLowerCase() === "y"
+  ) {
+    // Display common options
+    console.log("\nCommon base mint options:");
+    console.log("1. SOL (So11111111111111111111111111111111111111112)");
+    console.log("2. USDC (EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v)");
+    console.log("3. Custom address");
+
+    const baseMintOption = await question("Select an option (1-3): ");
+
+    let newBaseMint = currentBaseMint;
+
+    if (baseMintOption === "1") {
+      newBaseMint = "So11111111111111111111111111111111111111112";
+    } else if (baseMintOption === "2") {
+      newBaseMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+    } else if (baseMintOption === "3") {
+      const customAddress = await question("Enter custom base mint address: ");
+      if (customAddress.trim()) {
+        newBaseMint = customAddress.trim();
+      } else {
+        console.log("No address provided. Keeping current base mint.");
+      }
+    } else {
+      console.log("Invalid option. Keeping current base mint.");
+    }
+
+    // Update the base mint in the TOML file
+    let updatedContent = tomlContent;
+
+    // Check if [bot] section exists in the file
+    const botSectionRegex = /\[bot\][^\[]*(?=\[|$)/s;
+    const botSectionMatch = tomlContent.match(botSectionRegex);
+
+    if (botSectionMatch) {
+      const botSection = botSectionMatch[0];
+
+      // Check if base_mint is already in the file
+      if (baseMintMatch) {
+        // Replace the existing base_mint value
+        const newBotSection = botSection.replace(
+          /base_mint\s*=\s*"([^"]+)"/,
+          `base_mint = "${newBaseMint}"`
+        );
+        updatedContent = tomlContent.replace(botSectionRegex, newBotSection);
+      } else {
+        // Add base_mint to the [bot] section
+        const newBotSection = botSection.replace(
+          /\[bot\]/,
+          `[bot]\nbase_mint = "${newBaseMint}"`
+        );
+        updatedContent = tomlContent.replace(botSectionRegex, newBotSection);
+      }
+    } else {
+      console.log("Error: [bot] section not found in the TOML file.");
+      return;
+    }
+
+    // Write the updated TOML file
+    await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+
+    console.log(`\nBase mint updated successfully to: ${newBaseMint}`);
+  }
+}
+
 // Function to make API request for a specific page
 async function searchPoolsPage(query, page = 1) {
   return new Promise((resolve, reject) => {
@@ -229,7 +1202,7 @@ async function searchAllPools(query, maxPages = CONFIG.maxPages) {
   return allData;
 }
 
-// Function to filter pools by DEX and tokens
+// Function to filter pools by DEX and tokens (updated version)
 function filterPools(data) {
   let filteredData = { ...data };
   let filteredPools = [...data.data];
@@ -372,6 +1345,9 @@ block_engine_urls = [
   "https://mainnet.block-engine.jito.wtf/api/v1",
 ]
 # ip_addresses = ["156.229.120.0/24"]
+min_profit = 17000
+use_separate_tip_account = true
+
 [jito.tip_config]
 strategy = "Random"
 from = 6000
@@ -382,6 +1358,7 @@ count = 4
 enabled = false
 
 [bot]
+base_mint = "So11111111111111111111111111111111111111112" # Optional, default to SOL
 compute_unit_limit = 438_000
 merge_mints = false
 
@@ -897,167 +1874,13 @@ async function processToken(tokenAddress) {
   };
 }
 
-// Main function
+// Modify the main function to use the menu
 async function main() {
   try {
     console.log("=== Multi-Token Search and Config Updater ===");
-    // Ask for base token preference before anything else
-    console.log("\n=== Base Token Configuration ===");
-    const baseTokenChoice = await question(
-      "Which token do you want to filter for? (1 for SOL, 2 for USDC): "
-    );
 
-    if (baseTokenChoice === "2") {
-      CONFIG.tokenFilters.selectedTokenType = "usdc";
-      console.log("Selected USDC as base token filter.");
-    } else {
-      CONFIG.tokenFilters.selectedTokenType = "sol";
-      console.log("Selected SOL as base token filter (default).");
-    }
-    // Read the TOML file first
-    const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
-
-    // Extract existing tokens
-    const existingTokens = extractExistingTokens(tomlContent);
-    console.log(
-      `\nExisting tokens in config: ${
-        existingTokens.length > 0 ? existingTokens.join(", ") : "None"
-      }`
-    );
-
-    // Process all tokens
-    const processedTokens = [];
-    let continueAdding = true;
-
-    // First, process a new token
-    let tokenAddress = process.argv[2];
-    if (!tokenAddress) {
-      tokenAddress = await question(
-        "Enter the token address or symbol you want to search for: "
-      );
-
-      if (!tokenAddress) {
-        console.log("No token address provided. Exiting.");
-        rl.close();
-        return;
-      }
-    }
-
-    // Process the first token
-    const tokenResult = await processToken(tokenAddress);
-    if (tokenResult) {
-      processedTokens.push(tokenResult);
-    } else {
-      rl.close();
-      return;
-    }
-
-    // Get user configuration choices for the first token
-    const userConfig = await getUserConfig();
-
-    // Ask if user wants to add more tokens
-    while (continueAdding) {
-      const addMore = await question(
-        "\nDo you want to add another token? (yes/no): "
-      );
-      if (addMore.toLowerCase() !== "yes" && addMore.toLowerCase() !== "y") {
-        continueAdding = false;
-        continue;
-      }
-
-      const nextTokenAddress = await question(
-        "Enter the next token address or symbol: "
-      );
-      if (!nextTokenAddress) {
-        console.log("No token address provided. Skipping.");
-        continue;
-      }
-
-      // Skip if this token is already in the list
-      if (
-        processedTokens.some((t) => t.tokenAddress === nextTokenAddress) ||
-        existingTokens.includes(nextTokenAddress)
-      ) {
-        console.log(
-          `Token ${nextTokenAddress} is already in the configuration. Skipping.`
-        );
-        continue;
-      }
-
-      // Process the next token
-      const nextTokenResult = await processToken(nextTokenAddress);
-      if (nextTokenResult) {
-        processedTokens.push(nextTokenResult);
-      }
-    }
-
-    // Update TOML file for each token
-    let updatedContent = tomlContent;
-    let tokenCount = existingTokens.length;
-
-    for (const token of processedTokens) {
-      const result = await updateTomlFile(
-        updatedContent,
-        token.tokenAddress,
-        token.selectedPools,
-        userConfig
-      );
-      updatedContent = result.updatedContent;
-      tokenCount = result.tokenCount;
-    }
-
-    // Write the updated TOML file
-    const writeResult = await writeTomlFile(
-      CONFIG.tomlConfig.filePath,
-      updatedContent
-    );
-    console.log(`\n${writeResult}`);
-
-    // Output summary of updates
-    console.log(
-      `\nSUCCESS: TOML file updated with ${processedTokens.length} new tokens`
-    );
-    console.log(`Total tokens in configuration: ${tokenCount}`);
-    console.log(`merge_mints set to: ${tokenCount > 1 ? "true" : "false"}`);
-
-    processedTokens.forEach((token) => {
-      console.log(
-        `\n- ${token.tokenSymbol} (${token.tokenAddress}): ${token.totalSelectedPools} pools`
-      );
-      Object.keys(token.selectedPools).forEach((dex) => {
-        console.log(
-          `  ${getDexName(dex, token.filteredData.included)}: ${
-            token.selectedPools[dex].length
-          } pools`
-        );
-      });
-    });
-
-    // Display user configuration settings
-    console.log("\nConfiguration Settings:");
-    console.log(`- Jito enabled: ${userConfig.jito.enabled ? "Yes" : "No"}`);
-    if (userConfig.jito.enabled && userConfig.jito.selectedOption) {
-      console.log(`  Strategy: ${userConfig.jito.selectedOption.strategy}`);
-      console.log(`  From: ${userConfig.jito.selectedOption.from}`);
-      console.log(`  To: ${userConfig.jito.selectedOption.to}`);
-      console.log(`  Count: ${userConfig.jito.selectedOption.count}`);
-    }
-
-    console.log(`- Spam enabled: ${userConfig.spam.enabled ? "Yes" : "No"}`);
-    if (userConfig.spam.enabled && userConfig.spam.selectedOption) {
-      console.log(`  Strategy: ${userConfig.spam.selectedOption.strategy}`);
-      console.log(`  From: ${userConfig.spam.selectedOption.from}`);
-      console.log(`  To: ${userConfig.spam.selectedOption.to}`);
-      console.log(`  Count: ${userConfig.spam.selectedOption.count}`);
-    }
-
-    console.log("- Lookup table accounts:");
-    const allAccounts = userConfig.lookupTableAccounts.default.concat(
-      userConfig.lookupTableAccounts.custom
-    );
-    allAccounts.forEach((account) => {
-      console.log(`  ${account}`);
-    });
+    // Display the main menu
+    await displayMainMenu();
   } catch (error) {
     console.error("\nERROR:", error);
     process.exit(1);
