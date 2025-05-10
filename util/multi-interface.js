@@ -30,10 +30,15 @@ const CONFIG = {
 
   // Token filters - only show pools with SOL as base or quote token
   tokenFilters: {
-    // Set to true to only show pools with SOL as base or quote token
-    requireSol: true,
-    // SOL token ID
-    solTokenId: "solana_So11111111111111111111111111111111111111112",
+    // Default to SOL initially
+    requireSpecificToken: true,
+    // The selected token type (will be set based on user input)
+    selectedTokenType: "sol", // or "usdc"
+    // Token IDs
+    tokenIds: {
+      sol: "solana_So11111111111111111111111111111111111111112",
+      usdc: "solana_EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC token ID on Solana
+    },
   },
 
   // TOML config file
@@ -241,15 +246,17 @@ function filterPools(data) {
   }
 
   // Apply token filters if needed
-  if (CONFIG.tokenFilters.requireSol) {
+  if (CONFIG.tokenFilters.requireSpecificToken) {
+    const selectedTokenId =
+      CONFIG.tokenFilters.tokenIds[CONFIG.tokenFilters.selectedTokenType];
+
     filteredPools = filteredPools.filter((pool) => {
       const baseTokenId = pool.relationships.base_token.data.id;
       const quoteTokenId = pool.relationships.quote_token.data.id;
 
-      // Check if either the base or quote token is SOL
+      // Check if either the base or quote token matches the selected token
       return (
-        baseTokenId === CONFIG.tokenFilters.solTokenId ||
-        quoteTokenId === CONFIG.tokenFilters.solTokenId
+        baseTokenId === selectedTokenId || quoteTokenId === selectedTokenId
       );
     });
   }
@@ -364,7 +371,7 @@ block_engine_urls = [
   "https://frankfurt.mainnet.block-engine.jito.wtf/api/v1",
   "https://mainnet.block-engine.jito.wtf/api/v1",
 ]
-// ip_addresses = ["156.229.120.0/24"]
+# ip_addresses = ["156.229.120.0/24"]
 [jito.tip_config]
 strategy = "Random"
 from = 6000
@@ -894,7 +901,19 @@ async function processToken(tokenAddress) {
 async function main() {
   try {
     console.log("=== Multi-Token Search and Config Updater ===");
+    // Ask for base token preference before anything else
+    console.log("\n=== Base Token Configuration ===");
+    const baseTokenChoice = await question(
+      "Which token do you want to filter for? (1 for SOL, 2 for USDC): "
+    );
 
+    if (baseTokenChoice === "2") {
+      CONFIG.tokenFilters.selectedTokenType = "usdc";
+      console.log("Selected USDC as base token filter.");
+    } else {
+      CONFIG.tokenFilters.selectedTokenType = "sol";
+      console.log("Selected SOL as base token filter (default).");
+    }
     // Read the TOML file first
     const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
 
