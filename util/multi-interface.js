@@ -150,9 +150,12 @@ async function displayMainMenu() {
     console.log("4) Modify Jito settings");
     console.log("5) Modify DEX pool quantities");
     console.log("6) Modify Base Mint");
-    console.log("7) Exit program");
+    console.log("7) Create new lookup table");
+    console.log("8) Extend existing lookup table");
+    console.log("9) Run the bot"); // New option
+    console.log("10) Exit program"); // Updated exit option number
 
-    const choice = await question("Enter your choice (1-7): ");
+    const choice = await question("Enter your choice (1-10): ");
 
     switch (choice) {
       case "1":
@@ -174,12 +177,352 @@ async function displayMainMenu() {
         await modifyBaseMint();
         break;
       case "7":
+        await createLookupTable();
+        break;
+      case "8":
+        await extendLookupTable();
+        break;
+      case "9":
+        await runBot(); // New function
+        break;
+      case "10":
         exit = true;
         console.log("Exiting program...");
         break;
       default:
-        console.log("Invalid choice. Please enter a number from 1 to 7.");
+        console.log("Invalid choice. Please enter a number from 1 to 10.");
     }
+  }
+}
+
+async function runBot() {
+  console.log("\n=== Run Arbitrage Bot ===");
+
+  // Get the config path from the existing CONFIG
+  const configPath = CONFIG.tomlConfig.filePath;
+  console.log(`Using config file: ${configPath}`);
+
+  console.log("\nStarting the arbitrage bot...");
+  console.log("(Press Ctrl+C to stop the bot when needed)");
+
+  try {
+    // Use child_process via dynamic import for ES modules compatibility
+    const { spawn } = await import("child_process");
+
+    // Use spawn instead of execSync to allow the process to run continuously
+    // and stream output to the console
+    const botProcess = spawn("./smb-onchain", ["run", configPath], {
+      stdio: "inherit", // This will pipe the child process I/O to/from the parent
+    });
+
+    // Handle process events
+    botProcess.on("error", (error) => {
+      console.error(`Error starting bot: ${error.message}`);
+    });
+
+    botProcess.on("close", (code) => {
+      if (code === 0) {
+        console.log("\nBot process completed successfully.");
+      } else {
+        console.log(`\nBot process exited with code ${code}.`);
+      }
+    });
+
+    // Note: The process will continue running until the user presses Ctrl+C
+    // or until the process exits naturally
+  } catch (error) {
+    console.error("Error running bot:", error.message);
+  }
+}
+
+// Function to create a new lookup table
+async function createLookupTable() {
+  console.log("\n=== Create New Lookup Table ===");
+
+  // Get the config path from the existing CONFIG
+  const configPath = CONFIG.tomlConfig.filePath;
+  console.log(`Using config file: ${configPath}`);
+
+  // Confirm creation (as it costs SOL)
+  console.log(
+    "\nNOTE: Creating a lookup table will cost ~0.00128064 SOL. This cost cannot be recovered."
+  );
+  const confirmCreate = await question("Do you want to proceed? (yes/no): ");
+
+  if (
+    confirmCreate.toLowerCase() !== "yes" &&
+    confirmCreate.toLowerCase() !== "y"
+  ) {
+    console.log("Operation cancelled.");
+    return;
+  }
+
+  console.log("\nCreating lookup table...");
+
+  try {
+    // Use child_process via dynamic import for ES modules compatibility
+    const { execSync } = await import("child_process");
+    const result = execSync(
+      `./smb-onchain create-lookup-table ${configPath}`
+    ).toString();
+
+    // Parse the output to extract the lookup table address
+    const addressMatch = result.match(
+      /Lookup table created: ([A-Za-z0-9]{32,44})/
+    );
+
+    if (!addressMatch || !addressMatch[1]) {
+      console.log(
+        "Lookup table created, but couldn't extract the address from output."
+      );
+      console.log("Command output:", result);
+      return;
+    }
+
+    const lookupTableAddress = addressMatch[1];
+    console.log(`Lookup table created successfully: ${lookupTableAddress}`);
+
+    // Store the address in lookuptable.json
+    await saveLookupTableAddress(lookupTableAddress);
+
+    // Automatically add to configuration
+    await addLookupTableToConfig(lookupTableAddress);
+
+    console.log(
+      `Lookup table ${lookupTableAddress} has been added to the configuration.`
+    );
+  } catch (error) {
+    console.error("Error creating lookup table:", error.message);
+    if (error.stderr) {
+      console.error("Command error output:", error.stderr.toString());
+    }
+  }
+}
+
+// Function to extend an existing lookup table
+async function extendLookupTable() {
+  console.log("\n=== Extend Existing Lookup Table ===");
+
+  // Get the config path from the existing CONFIG
+  const configPath = CONFIG.tomlConfig.filePath;
+  console.log(`Using config file: ${configPath}`);
+
+  // Load existing lookup tables from file
+  const lookupTables = await loadLookupTables();
+
+  // Display available lookup tables
+  let lookupTableAddress;
+
+  if (lookupTables.length > 0) {
+    console.log("\nAvailable lookup tables:");
+    lookupTables.forEach((address, index) => {
+      console.log(`${index + 1}. ${address}`);
+    });
+
+    // Ask user to select a table or enter a new one
+    console.log("\nSelect a lookup table to extend:");
+    console.log(`1-${lookupTables.length}. Choose from the list above`);
+    console.log(`${lookupTables.length + 1}. Enter a different address`);
+
+    const selection = await question("Enter your choice: ");
+    const selectionNum = parseInt(selection);
+
+    if (
+      !isNaN(selectionNum) &&
+      selectionNum >= 1 &&
+      selectionNum <= lookupTables.length
+    ) {
+      // User selected from the list
+      lookupTableAddress = lookupTables[selectionNum - 1];
+    } else if (
+      !isNaN(selectionNum) &&
+      selectionNum === lookupTables.length + 1
+    ) {
+      // User wants to enter a different address
+      lookupTableAddress = await question("Enter the lookup table address: ");
+    } else {
+      // Input was something else (possibly a direct address)
+      lookupTableAddress = selection;
+    }
+  } else {
+    // No saved lookup tables
+    console.log("\nNo saved lookup tables found.");
+    lookupTableAddress = await question(
+      "Enter the lookup table address to extend: "
+    );
+  }
+
+  // Validate address format (simple check)
+  if (!/^[A-Za-z0-9]{32,44}$/.test(lookupTableAddress)) {
+    console.error("Invalid lookup table address format.");
+    return;
+  }
+
+  console.log(`\nSelected lookup table: ${lookupTableAddress}`);
+  console.log(
+    "\nNOTE: Adding one address will cost ~0.00022 SOL, this cost can be recovered by deactivating and closing the lookup table."
+  );
+
+  const confirmExtend = await question(
+    "Do you want to proceed with extending this lookup table? (yes/no): "
+  );
+
+  if (
+    confirmExtend.toLowerCase() !== "yes" &&
+    confirmExtend.toLowerCase() !== "y"
+  ) {
+    console.log("Operation cancelled.");
+    return;
+  }
+
+  console.log("\nExtending lookup table...");
+
+  try {
+    // Use child_process via dynamic import for ES modules compatibility
+    const { execSync } = await import("child_process");
+    const result = execSync(
+      `./smb-onchain extend-lookup-table ${configPath} ${lookupTableAddress}`
+    ).toString();
+
+    console.log("Lookup table extended successfully.");
+    console.log(result);
+
+    // Save this lookup table address if it's new
+    await saveLookupTableAddress(lookupTableAddress);
+
+    // Automatically add to configuration
+    await addLookupTableToConfig(lookupTableAddress);
+
+    console.log(
+      `Lookup table ${lookupTableAddress} has been added to the configuration.`
+    );
+  } catch (error) {
+    console.error("Error extending lookup table:", error.message);
+    if (error.stderr) {
+      console.error("Command error output:", error.stderr.toString());
+    }
+  }
+}
+
+async function saveLookupTableAddress(address) {
+  try {
+    // Load existing addresses
+    const lookupTables = await loadLookupTables();
+
+    // Add new address if not already present
+    if (!lookupTables.includes(address)) {
+      lookupTables.push(address);
+
+      // Write to file
+      await fs.writeFile(
+        "lookuptable.json",
+        JSON.stringify(lookupTables, null, 2)
+      );
+      console.log(`Address saved to lookuptable.json`);
+    }
+  } catch (error) {
+    console.error("Error saving lookup table address:", error.message);
+  }
+}
+
+// Helper function to load lookup tables from JSON file
+async function loadLookupTables() {
+  try {
+    const data = await fs.readFile("lookuptable.json", "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    // If file doesn't exist or has invalid JSON, return empty array
+    return [];
+  }
+}
+
+// Function to add lookup table to the config file
+async function addLookupTableToConfig(lookupTableAddress) {
+  try {
+    // Read the TOML file using the path from CONFIG
+    const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+    // Check if this lookup table is already in all mint_config_list sections
+    const mintSections =
+      tomlContent.match(
+        /\[\[routing\.mint_config_list\]\][^\[]*?(?=\[\[|$)/g
+      ) || [];
+
+    let updatedContent = tomlContent;
+
+    // For each mint section
+    for (const mintSection of mintSections) {
+      // Check if this lookup table is already in the section
+      if (!mintSection.includes(lookupTableAddress)) {
+        // Extract the lookup_table_accounts section if it exists
+        const lookupTablesMatch = mintSection.match(
+          /lookup_table_accounts = \[([\s\S]*?)\]/
+        );
+
+        if (lookupTablesMatch) {
+          // Get the current lookup table content
+          const currentLookupTables = lookupTablesMatch[1];
+
+          // Check if the lookup table list is not empty
+          const hasExistingTables = currentLookupTables.trim().length > 0;
+
+          // Create the new lookup table line with proper indentation (2 spaces)
+          const newEntry = hasExistingTables
+            ? `\n  "${lookupTableAddress}",`
+            : `\n  "${lookupTableAddress}",\n`;
+
+          // Insert at the end of the list but before the closing bracket
+          const updatedLookupTables = hasExistingTables
+            ? currentLookupTables + newEntry
+            : newEntry;
+
+          // Replace in the mint section
+          const updatedSection = mintSection.replace(
+            /lookup_table_accounts = \[([\s\S]*?)\]/,
+            `lookup_table_accounts = [${updatedLookupTables}]`
+          );
+
+          // Replace the section in the full content
+          updatedContent = updatedContent.replace(mintSection, updatedSection);
+        } else {
+          // If there's no lookup_table_accounts section, add it
+          const mintLine = mintSection.match(/mint = "([^"]+)"/);
+
+          if (mintLine) {
+            const newLookupTableSection = `lookup_table_accounts = [\n  "${lookupTableAddress}",\n]\n`;
+
+            // Add after the mint line
+            const updatedSection = mintSection.replace(
+              mintLine[0],
+              `${mintLine[0]}\n${newLookupTableSection}`
+            );
+
+            // Replace the section in the full content
+            updatedContent = updatedContent.replace(
+              mintSection,
+              updatedSection
+            );
+          }
+        }
+      }
+    }
+
+    // Update the file if changes were made
+    if (updatedContent !== tomlContent) {
+      await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+      console.log("TOML configuration updated with lookup table address.");
+    } else {
+      console.log("Lookup table address was already in all configurations.");
+    }
+
+    // Also add to in-memory CONFIG
+    if (
+      !CONFIG.userConfig.lookupTableAccounts.custom.includes(lookupTableAddress)
+    ) {
+      CONFIG.userConfig.lookupTableAccounts.custom.push(lookupTableAddress);
+    }
+  } catch (error) {
+    console.error("Error adding lookup table to config:", error.message);
   }
 }
 

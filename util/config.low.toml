@@ -56,7 +56,7 @@ count = 4
 enabled = false
 
 [bot]
-base_mint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" # Optional, default to SOL
+base_mint = "So11111111111111111111111111111111111111112" # Optional, default to SOL
 compute_unit_limit = 438_000
 merge_mints = false
 
