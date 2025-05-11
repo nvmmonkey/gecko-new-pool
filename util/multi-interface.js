@@ -49,20 +49,21 @@ const CONFIG = {
     // Maximum number of pools to include in the TOML file per token
     maxPools: 2,
     // Priority order for DEXes (highest to lowest)
-    dexPriority: ["pumpswap", "meteora", "raydium", "raydium-clmm"],
-    // Maximum number of pools per DEX
+    dexPriority: ["pumpswap", "meteora", "raydium", "raydium-clmm", "orca"],
     maxPoolsPerDex: {
       pumpswap: 1,
-      meteora: 2,
+      meteora: 1,
       raydium: 1,
-      "raydium-clmm": 0, // Do not include raydium-clmm pools
+      "raydium-clmm": 1,
+      orca: 1, // Add a default value for Orca
     },
     // Map DEX IDs to TOML config field names
     dexToFieldName: {
       pumpswap: "pump_pool_list",
       meteora: "meteora_dlmm_pool_list",
       raydium: "raydium_pool_list",
-      "raydium-clmm": "raydium_cp_pool_list",
+      "raydium-clmm": "raydium_clmm_pool_list",
+      orca: "whirlpool_pool_list", // Add the appropriate field name for Orca
     },
   },
 
@@ -1607,27 +1608,146 @@ function sortPools(
 }
 
 // Function to group pools by DEX
+// Function to group pools by DEX
 function groupPoolsByDex(pools) {
   const groupedPools = {};
 
+  // Initialize with DEXes from dexPriority
   CONFIG.tomlConfig.dexPriority.forEach((dex) => {
     groupedPools[dex] = [];
   });
 
+  // Process each pool
   pools.forEach((pool) => {
     const dexId = pool.relationships.dex.data.id;
+
+    // Create entry for this DEX if it doesn't exist yet (handles DEXes in filters but not in priority)
+    if (!groupedPools[dexId] && CONFIG.dexFilters[dexId]) {
+      groupedPools[dexId] = [];
+
+      // If this DEX is not in the priority list but should be included, add it to the priority list
+      if (!CONFIG.tomlConfig.dexPriority.includes(dexId)) {
+        console.log(
+          `Adding DEX ${dexId} to priority list (found in pool but not in config)`
+        );
+        CONFIG.tomlConfig.dexPriority.push(dexId);
+
+        // Also add to maxPoolsPerDex with a default value of 1
+        if (!CONFIG.tomlConfig.maxPoolsPerDex[dexId]) {
+          CONFIG.tomlConfig.maxPoolsPerDex[dexId] = 1;
+          console.log(`Added ${dexId} to maxPoolsPerDex with default value 1`);
+        }
+
+        // If it's Orca specifically, set the field name mapping
+        if (dexId === "orca" && !CONFIG.tomlConfig.dexToFieldName[dexId]) {
+          CONFIG.tomlConfig.dexToFieldName[dexId] = "whirlpool_pool_list";
+          console.log(
+            `Set field name mapping for ${dexId}: whirlpool_pool_list`
+          );
+        }
+      }
+    }
+
+    // Add the pool to its DEX group if we're tracking that DEX
     if (groupedPools[dexId]) {
       groupedPools[dexId].push(pool);
     }
   });
 
+  // Log the grouped pools for debugging
+  console.log("\nGrouped pools by DEX:");
+  for (const dex in groupedPools) {
+    console.log(`${dex}: ${groupedPools[dex].length} pools`);
+    if (groupedPools[dex].length > 0) {
+      const pool = groupedPools[dex][0];
+      console.log(`  Top pool: ${pool.attributes.name}`);
+      console.log(`  Address: ${pool.attributes.address}`);
+      console.log(
+        `  24h Volume: ${formatCurrency(
+          parseFloat(pool.attributes.volume_usd.h24 || "0")
+        )}`
+      );
+    }
+  }
+
   return groupedPools;
 }
+
+// Function to select top pools based on priority and limits
+// function selectTopPools(groupedPools) {
+//   const selectedPools = {};
+//   let totalSelectedPools = 0;
+
+//   // Select pools in priority order
+//   for (const dex of CONFIG.tomlConfig.dexPriority) {
+//     const poolsForDex = groupedPools[dex] || [];
+//     const maxPoolsForDex = CONFIG.tomlConfig.maxPoolsPerDex[dex] || 0;
+
+//     // Skip if no pools should be selected for this DEX
+//     if (maxPoolsForDex === 0) {
+//       continue;
+//     }
+
+//     // Select top pools for this DEX
+//     const topPoolsForDex = poolsForDex.slice(0, maxPoolsForDex);
+
+//     if (topPoolsForDex.length > 0) {
+//       selectedPools[dex] = topPoolsForDex;
+//       totalSelectedPools += topPoolsForDex.length;
+//     }
+
+//     // Stop if we've reached the maximum number of pools
+//     if (totalSelectedPools >= CONFIG.tomlConfig.maxPools) {
+//       break;
+//     }
+//   }
+
+//   return { selectedPools, totalSelectedPools };
+// }
 
 // Function to select top pools based on priority and limits
 function selectTopPools(groupedPools) {
   const selectedPools = {};
   let totalSelectedPools = 0;
+
+  // Log the current configuration for debugging
+  console.log("\nCurrent DEX Priority:", CONFIG.tomlConfig.dexPriority);
+  console.log("Current Max Pools Per DEX:", CONFIG.tomlConfig.maxPoolsPerDex);
+
+  // Ensure all DEXes with pools are properly configured
+  for (const dex in groupedPools) {
+    if (groupedPools[dex].length > 0) {
+      // Make sure it's in maxPoolsPerDex
+      if (
+        !CONFIG.tomlConfig.maxPoolsPerDex[dex] &&
+        CONFIG.tomlConfig.maxPoolsPerDex[dex] !== 0
+      ) {
+        CONFIG.tomlConfig.maxPoolsPerDex[dex] = 1;
+        console.log(`Set maxPoolsPerDex for ${dex} to 1`);
+      }
+
+      // Make sure it's in dexPriority
+      if (!CONFIG.tomlConfig.dexPriority.includes(dex)) {
+        CONFIG.tomlConfig.dexPriority.push(dex);
+        console.log(`Added ${dex} to dexPriority`);
+      }
+
+      // Make sure it has a field name mapping
+      if (!CONFIG.tomlConfig.dexToFieldName[dex]) {
+        if (dex === "orca") {
+          CONFIG.tomlConfig.dexToFieldName[dex] = "whirlpool_pool_list";
+        } else {
+          CONFIG.tomlConfig.dexToFieldName[dex] = `${dex}_pool_list`;
+        }
+        console.log(
+          `Set dexToFieldName for ${dex} to ${CONFIG.tomlConfig.dexToFieldName[dex]}`
+        );
+      }
+    }
+  }
+
+  console.log("\nUpdated DEX Priority:", CONFIG.tomlConfig.dexPriority);
+  console.log("Updated Max Pools Per DEX:", CONFIG.tomlConfig.maxPoolsPerDex);
 
   // Select pools in priority order
   for (const dex of CONFIG.tomlConfig.dexPriority) {
@@ -1636,6 +1756,7 @@ function selectTopPools(groupedPools) {
 
     // Skip if no pools should be selected for this DEX
     if (maxPoolsForDex === 0) {
+      console.log(`Skipping ${dex} (max pools = 0)`);
       continue;
     }
 
@@ -1645,10 +1766,26 @@ function selectTopPools(groupedPools) {
     if (topPoolsForDex.length > 0) {
       selectedPools[dex] = topPoolsForDex;
       totalSelectedPools += topPoolsForDex.length;
+      console.log(`Selected ${topPoolsForDex.length} pools for ${dex}`);
+
+      // Print the top pool for this DEX
+      if (topPoolsForDex.length > 0) {
+        const pool = topPoolsForDex[0];
+        console.log(`  Top pool: ${pool.attributes.name}`);
+        console.log(`  Address: ${pool.attributes.address}`);
+        console.log(
+          `  24h Volume: ${formatCurrency(
+            parseFloat(pool.attributes.volume_usd.h24 || "0")
+          )}`
+        );
+      }
     }
 
     // Stop if we've reached the maximum number of pools
     if (totalSelectedPools >= CONFIG.tomlConfig.maxPools) {
+      console.log(
+        `Reached maximum total pools (${CONFIG.tomlConfig.maxPools})`
+      );
       break;
     }
   }
