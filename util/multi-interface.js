@@ -86,6 +86,12 @@ const CONFIG = {
         },
         option3: {
           strategy: "Random",
+          from: 18643,
+          to: 48643,
+          count: 1,
+        },
+        option4: {
+          strategy: "Random",
           from: null,
           to: null,
           count: null,
@@ -1826,7 +1832,9 @@ block_engine_urls = [
 ]
 # ip_addresses = ["156.229.120.0/24"]
 min_profit = 17000
+no_failure_mode = false
 use_separate_tip_account = true
+block_engine_strategy = "OneByOne"
 
 [jito.tip_config]
 strategy = "Random"
