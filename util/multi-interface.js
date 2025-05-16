@@ -1832,6 +1832,7 @@ block_engine_urls = [
 ]
 # ip_addresses = ["156.229.120.0/24"]
 min_profit = 17000
+uuid = ""
 no_failure_mode = false
 use_separate_tip_account = true
 block_engine_strategy = "OneByOne"
