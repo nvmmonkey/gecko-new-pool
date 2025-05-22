@@ -7,10 +7,16 @@ pump_pool_list = [
 meteora_dlmm_pool_list = [
  "6wJ7W3oHj7ex6MVFp2o26NSof3aey7U8Brs8E371WCXA",
 ]
-##raydium_pool_list = [
+#raydium_pool_list = [
 #  "example_address",
 #]
-#raydium_cp_pool_list = [
+#raydium_clmm_pool_list = [
+#  "example_address",
+#]
+#whirlpool_pool_list = [
+#  "example_address",
+#]
+#solfi_pool_list = [
 #  "example_address",
 #]
 lookup_table_accounts = [
@@ -43,14 +49,17 @@ block_engine_urls = [
   "https://mainnet.block-engine.jito.wtf/api/v1",
 ]
 # ip_addresses = ["156.229.120.0/24"]
-min_profit = 17000
+#min_profit = 17000
+uuid = ""
+no_failure_mode = false
 use_separate_tip_account = true
+block_engine_strategy = "OneByOne"
 
 [jito.tip_config]
 strategy = "Random"
 from = 3000
-to = NaN
-count = NaN
+to = 9000
+count = 1
 
 [kamino_flashloan]
 enabled = false
