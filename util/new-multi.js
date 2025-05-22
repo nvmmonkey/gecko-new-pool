@@ -545,103 +545,141 @@ async function loadLookupTables() {
 }
 
 async function addCustomLookupTable() {
-    console.log("\n=== Add Custom Lookup Table ===");
-  
-    // Read the TOML file
-    const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
-  
-    // Extract existing tokens to show user what will be affected
-    const existingTokens = extractExistingTokens(tomlContent);
-  
-    if (existingTokens.length === 0) {
-      console.log("❌ No tokens found in configuration file.");
-      console.log("Add some tokens first before adding lookup tables.");
-      return;
-    }
-  
-    // Display existing tokens that will be affected
-    console.log(`\nFound ${existingTokens.length} token configuration(s):`);
-    existingTokens.forEach((token, index) => {
-      console.log(`${index + 1}. ${token}`);
+  console.log("\n=== Add Custom Lookup Table ===");
+
+  // Read the TOML file
+  const tomlContent = await readTomlFile(CONFIG.tomlConfig.filePath);
+
+  // Extract existing tokens to show user what will be affected
+  const existingTokens = extractExistingTokens(tomlContent);
+
+  if (existingTokens.length === 0) {
+    console.log("❌ No tokens found in configuration file.");
+    console.log("Add some tokens first before adding lookup tables.");
+    return;
+  }
+
+  // Display existing tokens that will be affected
+  console.log(`\nFound ${existingTokens.length} token configuration(s):`);
+  existingTokens.forEach((token, index) => {
+    console.log(`${index + 1}. ${token}`);
+  });
+
+  // Load existing lookup tables for reference
+  const savedLookupTables = await loadLookupTables();
+
+  if (savedLookupTables.length > 0) {
+    console.log("\nSaved lookup tables (for reference):");
+    savedLookupTables.forEach((address, index) => {
+      console.log(`${index + 1}. ${address}`);
     });
-  
-    // Load existing lookup tables for reference
-    const savedLookupTables = await loadLookupTables();
-  
-    if (savedLookupTables.length > 0) {
-      console.log("\nSaved lookup tables (for reference):");
-      savedLookupTables.forEach((address, index) => {
-        console.log(`${index + 1}. ${address}`);
-      });
-    }
-  
-    // Ask for the lookup table address
-    const lookupTableAddress = await question(
-      "\nEnter lookup table address to add to all tokens: "
-    );
-  
-    if (!lookupTableAddress.trim()) {
-      console.log("Operation cancelled.");
-      return;
-    }
-  
-    // Validate address format
-    if (!/^[A-Za-z0-9]{32,44}$/.test(lookupTableAddress.trim())) {
-      console.log("❌ Invalid Solana address format.");
-      console.log("Address should be 32-44 characters, base58 encoded.");
-      return;
-    }
-  
-    const cleanAddress = lookupTableAddress.trim();
-  
-    console.log(
-      `\nAdding lookup table ${cleanAddress} to all token configurations...`
-    );
-  
-    // Find all mint_config_list sections - Fixed regex approach
-    let updatedContent = tomlContent;
-    let sectionsUpdated = 0;
-  
-    // Split content by mint config sections
-    const sections = tomlContent.split(/(?=\[\[routing\.mint_config_list\]\])/);
-    
-    for (let i = 1; i < sections.length; i++) { // Skip first empty section
-      const section = sections[i];
-      
-      // Check if this section contains a lookup_table_accounts array
-      const lookupTableRegex = /lookup_table_accounts\s*=\s*\[([^\]]*)\]/s;
-      const lookupTableMatch = section.match(lookupTableRegex);
-      
-      if (lookupTableMatch) {
-        const currentAccounts = lookupTableMatch[1].trim();
-        
-        // Check if this lookup table is already present
-        if (currentAccounts.includes(cleanAddress)) {
-          console.log(`⚠️  Lookup table already exists in configuration, skipping duplicate...`);
-          continue;
-        }
-  
-        // Determine how to add the new address
-        let newAccountsList;
-        if (currentAccounts.length === 0) {
-          // Empty list, add as first entry
-          newAccountsList = `\n  "${cleanAddress}",\n`;
-        } else {
-          // Add to existing list - ensure proper formatting
-          const trimmedAccounts = currentAccounts.replace(/,\s*$/, ''); // Remove trailing comma
-          newAccountsList = trimmedAccounts + `,\n  "${cleanAddress}",`;
-        }
-  
-        const newLookupSection = `lookup_table_accounts = [${newAccountsList}]`;
-        const updatedSection = section.replace(lookupTableRegex, newLookupSection);
-        
-        // Replace this section in the full content
-        updatedContent = updatedContent.replace(section, updatedSection);
-        sectionsUpdated++;
-      } else {
-        console.log(`⚠️  No lookup_table_accounts found in one of the sections`);
+  }
+
+  // Ask for the lookup table address
+  const lookupTableAddress = await question(
+    "\nEnter lookup table address to add to all tokens: "
+  );
+
+  if (!lookupTableAddress.trim()) {
+    console.log("Operation cancelled.");
+    return;
+  }
+
+  // Validate address format
+  if (!/^[A-Za-z0-9]{32,44}$/.test(lookupTableAddress.trim())) {
+    console.log("❌ Invalid Solana address format.");
+    console.log("Address should be 32-44 characters, base58 encoded.");
+    return;
+  }
+
+  const cleanAddress = lookupTableAddress.trim();
+
+  console.log(
+    `\nAdding lookup table ${cleanAddress} to all token configurations...`
+  );
+
+  // Find all mint_config_list sections - Fixed regex approach
+  let updatedContent = tomlContent;
+  let sectionsUpdated = 0;
+
+  // Split content by mint config sections
+  const sections = tomlContent.split(/(?=\[\[routing\.mint_config_list\]\])/);
+
+  for (let i = 1; i < sections.length; i++) {
+    // Skip first empty section
+    const section = sections[i];
+
+    // Check if this section contains a lookup_table_accounts array
+    const lookupTableRegex = /lookup_table_accounts\s*=\s*\[([^\]]*)\]/s;
+    const lookupTableMatch = section.match(lookupTableRegex);
+
+    if (lookupTableMatch) {
+      const currentAccounts = lookupTableMatch[1].trim();
+
+      // Check if this lookup table is already present
+      if (currentAccounts.includes(cleanAddress)) {
+        console.log(
+          `⚠️  Lookup table already exists in configuration, skipping duplicate...`
+        );
+        continue;
       }
+
+      // Determine how to add the new address
+      let newAccountsList;
+      if (currentAccounts.length === 0) {
+        // Empty list, add as first entry
+        newAccountsList = `\n  "${cleanAddress}",\n`;
+      } else {
+        // Add to existing list - ensure proper formatting
+        const trimmedAccounts = currentAccounts.replace(/,\s*$/, ""); // Remove trailing comma
+        newAccountsList = trimmedAccounts + `,\n  "${cleanAddress}",`;
+      }
+
+      const newLookupSection = `lookup_table_accounts = [${newAccountsList}]`;
+      const updatedSection = section.replace(
+        lookupTableRegex,
+        newLookupSection
+      );
+
+      // Replace this section in the full content
+      updatedContent = updatedContent.replace(section, updatedSection);
+      sectionsUpdated++;
+    } else {
+      console.log(`⚠️  No lookup_table_accounts found in one of the sections`);
     }
+  }
+
+  if (sectionsUpdated === 0) {
+    console.log(
+      "❌ No sections were updated. Either lookup table already exists or no lookup_table_accounts sections found."
+    );
+    return;
+  }
+
+  // Write the updated content
+  try {
+    await writeTomlFile(CONFIG.tomlConfig.filePath, updatedContent);
+
+    console.log(
+      `\n✅ SUCCESS: Added lookup table to ${sectionsUpdated} token configuration(s)`
+    );
+    console.log(`Lookup table address: ${cleanAddress}`);
+
+    // Save to lookup table file for future reference
+    await saveLookupTableAddress(cleanAddress);
+    console.log(
+      `📝 Lookup table saved to lookuptable.json for future reference`
+    );
+
+    // Show summary
+    console.log(`\n📊 Summary:`);
+    console.log(`- Total tokens in config: ${existingTokens.length}`);
+    console.log(`- Configurations updated: ${sectionsUpdated}`);
+    console.log(`- Lookup table added: ${cleanAddress}`);
+  } catch (error) {
+    console.error("❌ Error updating configuration file:", error.message);
+  }
+}
 
 // Function to add lookup table to the config file
 async function addLookupTableToConfig(lookupTableAddress) {
