@@ -49,13 +49,21 @@ const CONFIG = {
     // Maximum number of pools to include in the TOML file per token
     maxPools: 2,
     // Priority order for DEXes (highest to lowest)
-    dexPriority: ["pumpswap", "meteora", "raydium", "raydium-clmm", "orca"],
+    dexPriority: [
+      "pumpswap",
+      "meteora",
+      "raydium",
+      "raydium-clmm",
+      "orca",
+      "solfi",
+    ],
     maxPoolsPerDex: {
       pumpswap: 1,
       meteora: 1,
       raydium: 1,
       "raydium-clmm": 1,
       orca: 1, // Add a default value for Orca
+      solfi: 1,
     },
     // Map DEX IDs to TOML config field names
     dexToFieldName: {
@@ -64,6 +72,7 @@ const CONFIG = {
       raydium: "raydium_pool_list",
       "raydium-clmm": "raydium_clmm_pool_list",
       orca: "whirlpool_pool_list", // Add the appropriate field name for Orca
+      solfi: "solfi_pool_list",
     },
   },
 
@@ -74,20 +83,20 @@ const CONFIG = {
       options: {
         option1: {
           strategy: "Random",
-          from: 191225,
-          to: 98051225,
-          count: 10,
+          from: 3000,
+          to: 9000,
+          count: 1,
         },
         option2: {
           strategy: "Random",
-          from: 1051225,
-          to: 19051225,
-          count: 10,
+          from: 5000,
+          to: 13000,
+          count: 1,
         },
         option3: {
           strategy: "Random",
-          from: 18643,
-          to: 48643,
+          from: 9000,
+          to: 23000,
           count: 1,
         },
         option4: {
@@ -990,9 +999,9 @@ async function modifyJitoSettings() {
           }
         : {
             strategy: "Random",
-            from: 1051225,
-            to: 10051225,
-            count: 5,
+            from: 5000,
+            to: 13000,
+            count: 1,
           },
     },
   };
@@ -1020,27 +1029,41 @@ async function modifyJitoSettings() {
     // Modify tip configuration
     if (userConfig.jito.enabled) {
       console.log("\nSelect a Jito tip strategy option:");
-      console.log("1. Random strategy, from 1051225 to 10051225, count 5");
-      console.log("2. Random strategy, from 10051225 to 100051225, count 5");
-      console.log("3. Custom values");
+      console.log(
+        `1. Random strategy, from ${CONFIG.userConfig.jito.options.option1.from} to ${CONFIG.userConfig.jito.options.option1.to}, count ${CONFIG.userConfig.jito.options.option1.count}`
+      );
+      console.log(
+        `2. Random strategy, from ${CONFIG.userConfig.jito.options.option2.from} to ${CONFIG.userConfig.jito.options.option2.to}, count ${CONFIG.userConfig.jito.options.option2.count}`
+      );
+      console.log(
+        `3. Random strategy, from ${CONFIG.userConfig.jito.options.option3.from} to ${CONFIG.userConfig.jito.options.option3.to}, count ${CONFIG.userConfig.jito.options.option3.count}`
+      );
+      console.log("4. Custom values");
 
-      const jitoOption = await question("Enter option number (1-3): ");
+      const jitoOption = await question("Enter option number (1-4): ");
 
       if (jitoOption === "1") {
         userConfig.jito.selectedOption = {
           strategy: "Random",
-          from: 1051225,
-          to: 10051225,
-          count: 5,
+          from: CONFIG.userConfig.jito.options.option1.from,
+          to: CONFIG.userConfig.jito.options.option1.to,
+          count: CONFIG.userConfig.jito.options.option1.count,
         };
       } else if (jitoOption === "2") {
         userConfig.jito.selectedOption = {
           strategy: "Random",
-          from: 10051225,
-          to: 100051225,
-          count: 5,
+          from: CONFIG.userConfig.jito.options.option2.from,
+          to: CONFIG.userConfig.jito.options.option2.to,
+          count: CONFIG.userConfig.jito.options.option2.count,
         };
       } else if (jitoOption === "3") {
+        userConfig.jito.selectedOption = {
+          strategy: "Random",
+          from: CONFIG.userConfig.jito.options.option3.from,
+          to: CONFIG.userConfig.jito.options.option3.to,
+          count: CONFIG.userConfig.jito.options.option3.count,
+        };
+      } else if (jitoOption === "4") {
         userConfig.jito.selectedOption.strategy = "Random";
         userConfig.jito.selectedOption.from = parseInt(
           await question('Enter "from" value: '),
@@ -1060,7 +1083,7 @@ async function modifyJitoSettings() {
     } else {
       console.log("Cannot modify tip configuration when Jito is disabled.");
     }
-  } else if (settingChoice === "4") {
+  } else if (settingChoice === "5") {
     return;
   } else {
     console.log("Invalid choice. No changes made.");
@@ -1831,7 +1854,7 @@ block_engine_urls = [
   "https://mainnet.block-engine.jito.wtf/api/v1",
 ]
 # ip_addresses = ["156.229.120.0/24"]
-min_profit = 17000
+#min_profit = 17000
 uuid = ""
 no_failure_mode = false
 use_separate_tip_account = true
@@ -2144,11 +2167,18 @@ async function getUserConfig() {
 
   if (userConfig.jito.enabled) {
     console.log("\nSelect a Jito tip strategy option:");
-    console.log("1. Random strategy, from 1051225 to 10051225, count 5");
-    console.log("2. Random strategy, from 10051225 to 100051225, count 5");
-    console.log("3. Custom values");
+    console.log(
+      `1. Random strategy, from ${CONFIG.userConfig.jito.options.option1.from} to ${CONFIG.userConfig.jito.options.option1.to}, count ${CONFIG.userConfig.jito.options.option1.count}`
+    );
+    console.log(
+      `2. Random strategy, from ${CONFIG.userConfig.jito.options.option2.from} to ${CONFIG.userConfig.jito.options.option2.to}, count ${CONFIG.userConfig.jito.options.option2.count}`
+    );
+    console.log(
+      `3. Random strategy, from ${CONFIG.userConfig.jito.options.option3.from} to ${CONFIG.userConfig.jito.options.option3.to}, count ${CONFIG.userConfig.jito.options.option3.count}`
+    );
+    console.log("4. Custom values");
 
-    const jitoOption = await question("Enter option number (1-3): ");
+    const jitoOption = await question("Enter option number (1-4): ");
 
     if (jitoOption === "1") {
       userConfig.jito.selectedOption = {
@@ -2159,19 +2189,19 @@ async function getUserConfig() {
         ...CONFIG.userConfig.jito.options.option2,
       };
     } else if (jitoOption === "3") {
-      userConfig.jito.selectedOption = { strategy: "Random" };
-      userConfig.jito.selectedOption.from = parseInt(
-        await question('Enter "from" value: '),
-        10
-      );
-      userConfig.jito.selectedOption.to = parseInt(
-        await question('Enter "to" value: '),
-        10
-      );
-      userConfig.jito.selectedOption.count = parseInt(
-        await question('Enter "count" value: '),
-        10
-      );
+      userConfig.jito.selectedOption = {
+        strategy: "Random",
+        from: userConfig.jito.options.option3.from,
+        to: userConfig.jito.options.option3.to,
+        count: userConfig.jito.options.option3.count,
+      };
+    } else if (jitoOption === "4") {
+      userConfig.jito.selectedOption = {
+        strategy: "Random",
+        from: parseInt(await question('Enter "from" value: '), 10),
+        to: parseInt(await question('Enter "to" value: '), 10),
+        count: parseInt(await question('Enter "count" value: '), 10) || 1,
+      };
     } else {
       console.log("Invalid option. Using option 1 as default.");
       userConfig.jito.selectedOption = {

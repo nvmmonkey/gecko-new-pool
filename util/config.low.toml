@@ -6,9 +6,8 @@ pump_pool_list = [
 ]
 meteora_dlmm_pool_list = [
  "6wJ7W3oHj7ex6MVFp2o26NSof3aey7U8Brs8E371WCXA",
- "4Dvr3ghgphp4aTAsB34fmPP9Uk6e6xui6PbPaNiAHqRo",
 ]
-#raydium_pool_list = [
+##raydium_pool_list = [
 #  "example_address",
 #]
 #raydium_cp_pool_list = [
@@ -25,7 +24,7 @@ process_delay = 400
 url = "http://5.39.216.200:8899"
 
 [spam]
-enabled = true
+enabled = false
 sending_rpc_urls = [
   "http://rpc-ams.thornode.io",
 ]
@@ -33,7 +32,8 @@ compute_unit_price = { strategy = "Random", from = 28311, to = 488111, count = 1
 skip_preflight = true
 
 [jito]
-enabled = false
+enabled = true
+min_profit = 17000
 block_engine_urls = [
   "https://ny.mainnet.block-engine.jito.wtf/api/v1",
   "https://slc.mainnet.block-engine.jito.wtf/api/v1",
@@ -48,9 +48,9 @@ use_separate_tip_account = true
 
 [jito.tip_config]
 strategy = "Random"
-from = 6000
-to = 500500
-count = 4
+from = 3000
+to = NaN
+count = NaN
 
 [kamino_flashloan]
 enabled = false
