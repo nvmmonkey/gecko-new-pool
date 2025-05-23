@@ -2056,6 +2056,226 @@ function extractExistingTokens(tomlContent) {
 }
 
 // Function to update the TOML file with selected pools
+// async function updateTomlFile(
+//   tomlContent,
+//   tokenAddress,
+//   selectedPools,
+//   userConfig
+// ) {
+//   let updatedContent = tomlContent;
+
+//   // Regular expression to find the mint_config_list section for this token
+//   const mintSectionRegex = new RegExp(
+//     `\\[\\[routing\\.mint_config_list\\]\\][\\s\\S]*?mint = "${tokenAddress}"[\\s\\S]*?(?=\\[\\[routing\\.mint_config_list\\]\\]|$)`,
+//     "i"
+//   );
+
+//   // Check if we have a section for this token
+//   const mintSection = updatedContent.match(mintSectionRegex);
+
+//   if (mintSection) {
+//     let newMintSection = mintSection[0];
+
+//     // Update each DEX pool list
+//     for (const dex of Object.keys(CONFIG.tomlConfig.dexToFieldName)) {
+//       const fieldName = CONFIG.tomlConfig.dexToFieldName[dex];
+//       const poolsForDex = selectedPools[dex] || [];
+
+//       // Regular expression to find the existing pool list for this DEX
+//       const poolListRegex = new RegExp(`${fieldName} = \\[[\\s\\S]*?\\]`, "i");
+//       const commentedPoolListRegex = new RegExp(
+//         `#${fieldName} = \\[[\\s\\S]*?\\]`,
+//         "i"
+//       );
+
+//       if (poolsForDex.length > 0) {
+//         // Format the new pool list
+//         const poolAddresses = poolsForDex
+//           .map((pool) => ` "${pool.attributes.address}",`)
+//           .join("\n");
+//         const newPoolList = `${fieldName} = [\n${poolAddresses}\n]`;
+
+//         // Check if the pool list already exists (uncommented)
+//         if (poolListRegex.test(newMintSection)) {
+//           // Replace the existing pool list
+//           newMintSection = newMintSection.replace(poolListRegex, newPoolList);
+//         }
+//         // Check if the pool list exists but is commented out
+//         else if (commentedPoolListRegex.test(newMintSection)) {
+//           // Uncomment and replace the existing pool list
+//           newMintSection = newMintSection.replace(
+//             commentedPoolListRegex,
+//             newPoolList
+//           );
+//         }
+//         // Otherwise, add the pool list after the mint line
+//         else {
+//           const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+//           newMintSection = newMintSection.replace(
+//             mintLineRegex,
+//             `mint = "${tokenAddress}"\n${newPoolList}`
+//           );
+//         }
+//       } else {
+//         // If we don't have pools for this DEX, comment out the section if it exists
+//         if (poolListRegex.test(newMintSection)) {
+//           // Comment out the existing pool list
+//           newMintSection = newMintSection.replace(
+//             poolListRegex,
+//             (match) => `#${match}`
+//           );
+//         }
+//       }
+//     }
+
+//     // Update lookup table accounts
+//     const lookupTableRegex = /lookup_table_accounts = \[[\s\S]*?\]/i;
+//     const lookupTableList = userConfig.lookupTableAccounts.default
+//       .concat(userConfig.lookupTableAccounts.custom)
+//       .map((account) => `  "${account}",`)
+//       .join("\n");
+//     const newLookupTable = `lookup_table_accounts = [\n${lookupTableList}\n]`;
+
+//     if (lookupTableRegex.test(newMintSection)) {
+//       newMintSection = newMintSection.replace(lookupTableRegex, newLookupTable);
+//     } else {
+//       // Add lookup table after a pool list or the mint line
+//       const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+//       newMintSection = newMintSection.replace(
+//         mintLineRegex,
+//         `mint = "${tokenAddress}"\n${newLookupTable}`
+//       );
+//     }
+
+//     // Update process_delay
+//     const processDelayRegex = /process_delay = \d+/i;
+//     const newProcessDelay = `process_delay = 400`;
+
+//     if (processDelayRegex.test(newMintSection)) {
+//       newMintSection = newMintSection.replace(
+//         processDelayRegex,
+//         newProcessDelay
+//       );
+//     } else {
+//       // Add process delay after lookup table or a pool list or the mint line
+//       if (lookupTableRegex.test(newMintSection)) {
+//         const lookupTableMatch = newMintSection.match(lookupTableRegex);
+//         if (lookupTableMatch) {
+//           newMintSection = newMintSection.replace(
+//             lookupTableMatch[0],
+//             `${lookupTableMatch[0]}\n${newProcessDelay}`
+//           );
+//         }
+//       } else {
+//         const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+//         newMintSection = newMintSection.replace(
+//           mintLineRegex,
+//           `mint = "${tokenAddress}"\n${newProcessDelay}`
+//         );
+//       }
+//     }
+
+//     // Replace the old mint section with the updated one
+//     updatedContent = updatedContent.replace(mintSectionRegex, newMintSection);
+//   } else {
+//     // If we don't have a section for this token, create a new one
+//     let newMintSection = `[[routing.mint_config_list]]\nmint = "${tokenAddress}"\n`;
+
+//     // Add each DEX pool list
+//     for (const dex of Object.keys(CONFIG.tomlConfig.dexToFieldName)) {
+//       const fieldName = CONFIG.tomlConfig.dexToFieldName[dex];
+//       const poolsForDex = selectedPools[dex] || [];
+
+//       if (poolsForDex.length > 0) {
+//         // Format the new pool list
+//         const poolAddresses = poolsForDex
+//           .map((pool) => ` "${pool.attributes.address}",`)
+//           .join("\n");
+//         newMintSection += `${fieldName} = [\n${poolAddresses}\n]\n`;
+//       } else {
+//         newMintSection += `#${fieldName} = [\n#  "example_address",\n#]\n`;
+//       }
+//     }
+
+//     // Add lookup_table_accounts
+//     const lookupTableList = userConfig.lookupTableAccounts.default
+//       .concat(userConfig.lookupTableAccounts.custom)
+//       .map((account) => `  "${account}",`)
+//       .join("\n");
+//     newMintSection += `lookup_table_accounts = [\n${lookupTableList}\n]\n`;
+
+//     // Add process_delay
+//     newMintSection += `process_delay = 400\n\n`;
+
+//     // Add the new mint section right after the [routing] line
+//     const routingRegex = /\[routing\]\n/i;
+//     updatedContent = updatedContent.replace(
+//       routingRegex,
+//       `[routing]\n${newMintSection}`
+//     );
+//   }
+
+//   // Update jito.enabled
+//   const jitoEnabledRegex = /\[jito\]\nenabled = (true|false)/i;
+//   const newJitoEnabled = `[jito]\nenabled = ${
+//     userConfig.jito.enabled ? "true" : "false"
+//   }`;
+
+//   updatedContent = updatedContent.replace(jitoEnabledRegex, newJitoEnabled);
+
+//   // Update jito.tip_config if jito is enabled
+//   if (userConfig.jito.enabled) {
+//     const jitoTipConfigRegex =
+//       /\[jito\.tip_config\]\nstrategy = "[^"]+"\nfrom = \d+\nto = \d+\ncount = \d+/i;
+//     const selectedOption = userConfig.jito.selectedOption;
+//     const newJitoTipConfig = `[jito.tip_config]\nstrategy = "${selectedOption.strategy}"\nfrom = ${selectedOption.from}\nto = ${selectedOption.to}\ncount = ${selectedOption.count}`;
+
+//     updatedContent = updatedContent.replace(
+//       jitoTipConfigRegex,
+//       newJitoTipConfig
+//     );
+//   }
+
+//   // Update spam.enabled
+//   const spamEnabledRegex = /\[spam\]\nenabled = (true|false)/i;
+//   const newSpamEnabled = `[spam]\nenabled = ${
+//     userConfig.spam.enabled ? "true" : "false"
+//   }`;
+
+//   updatedContent = updatedContent.replace(spamEnabledRegex, newSpamEnabled);
+
+//   // Update compute_unit_price if spam is enabled
+//   if (userConfig.spam.enabled) {
+//     const computeUnitPriceRegex =
+//       /compute_unit_price = \{ strategy = "[^"]+", from = \d+, to = \d+, count = \d+ \}/i;
+//     const selectedOption = userConfig.spam.selectedOption;
+//     const newComputeUnitPrice = `compute_unit_price = { strategy = "${selectedOption.strategy}", from = ${selectedOption.from}, to = ${selectedOption.to}, count = ${selectedOption.count} }`;
+
+//     updatedContent = updatedContent.replace(
+//       computeUnitPriceRegex,
+//       newComputeUnitPrice
+//     );
+//   }
+
+//   // Get existing tokens and add the current one if not already present
+//   const existingTokens = extractExistingTokens(updatedContent);
+//   if (!existingTokens.includes(tokenAddress)) {
+//     existingTokens.push(tokenAddress);
+//   }
+
+//   // Update merge_mints based on the number of tokens
+//   const mergeMintValue = existingTokens.length > 1 ? "true" : "false";
+//   const mergeMintRegex = /merge_mints = (true|false)/i;
+//   const newMergeMint = `merge_mints = ${mergeMintValue}`;
+
+//   updatedContent = updatedContent.replace(mergeMintRegex, newMergeMint);
+
+//   return {
+//     updatedContent,
+//     tokenCount: existingTokens.length,
+//   };
+// }
+
 async function updateTomlFile(
   tomlContent,
   tokenAddress,
@@ -2215,46 +2435,83 @@ async function updateTomlFile(
     );
   }
 
-  // Update jito.enabled
-  const jitoEnabledRegex = /\[jito\]\nenabled = (true|false)/i;
-  const newJitoEnabled = `[jito]\nenabled = ${
-    userConfig.jito.enabled ? "true" : "false"
-  }`;
+  // Update jito.enabled - FIXED
+  const jitoEnabledRegex = /(enabled\s*=\s*)(true|false)/i;
+  const jitoSectionMatch = updatedContent.match(
+    /\[jito\][\s\S]*?(?=\n\[|\n$|$)/i
+  );
 
-  updatedContent = updatedContent.replace(jitoEnabledRegex, newJitoEnabled);
-
-  // Update jito.tip_config if jito is enabled
-  if (userConfig.jito.enabled) {
-    const jitoTipConfigRegex =
-      /\[jito\.tip_config\]\nstrategy = "[^"]+"\nfrom = \d+\nto = \d+\ncount = \d+/i;
-    const selectedOption = userConfig.jito.selectedOption;
-    const newJitoTipConfig = `[jito.tip_config]\nstrategy = "${selectedOption.strategy}"\nfrom = ${selectedOption.from}\nto = ${selectedOption.to}\ncount = ${selectedOption.count}`;
-
+  if (jitoSectionMatch && jitoEnabledRegex.test(jitoSectionMatch[0])) {
+    const newEnabledValue = userConfig.jito.enabled ? "true" : "false";
     updatedContent = updatedContent.replace(
-      jitoTipConfigRegex,
-      newJitoTipConfig
+      jitoEnabledRegex,
+      `$1${newEnabledValue}`
     );
   }
 
-  // Update spam.enabled
-  const spamEnabledRegex = /\[spam\]\nenabled = (true|false)/i;
-  const newSpamEnabled = `[spam]\nenabled = ${
-    userConfig.spam.enabled ? "true" : "false"
-  }`;
+  // Update jito.tip_config if jito is enabled - FIXED
+  if (userConfig.jito.enabled && userConfig.jito.selectedOption) {
+    const selectedOption = userConfig.jito.selectedOption;
 
-  updatedContent = updatedContent.replace(spamEnabledRegex, newSpamEnabled);
-
-  // Update compute_unit_price if spam is enabled
-  if (userConfig.spam.enabled) {
-    const computeUnitPriceRegex =
-      /compute_unit_price = \{ strategy = "[^"]+", from = \d+, to = \d+, count = \d+ \}/i;
-    const selectedOption = userConfig.spam.selectedOption;
-    const newComputeUnitPrice = `compute_unit_price = { strategy = "${selectedOption.strategy}", from = ${selectedOption.from}, to = ${selectedOption.to}, count = ${selectedOption.count} }`;
-
+    // Update strategy
     updatedContent = updatedContent.replace(
-      computeUnitPriceRegex,
-      newComputeUnitPrice
+      /(strategy\s*=\s*)"[^"]*"/i,
+      `$1"${selectedOption.strategy}"`
     );
+
+    // Update from
+    updatedContent = updatedContent.replace(
+      /(from\s*=\s*)\d+/i,
+      `$1${selectedOption.from}`
+    );
+
+    // Update to
+    updatedContent = updatedContent.replace(
+      /(to\s*=\s*)\d+/i,
+      `$1${selectedOption.to}`
+    );
+
+    // Update count
+    updatedContent = updatedContent.replace(
+      /(count\s*=\s*)\d+/i,
+      `$1${selectedOption.count}`
+    );
+  }
+
+  // Update spam.enabled - FIXED
+  const spamEnabledRegex = /(enabled\s*=\s*)(true|false)/i;
+  const spamSectionMatch = updatedContent.match(
+    /\[spam\][\s\S]*?(?=\n\[|\n$|$)/i
+  );
+
+  if (spamSectionMatch && spamEnabledRegex.test(spamSectionMatch[0])) {
+    const newEnabledValue = userConfig.spam.enabled ? "true" : "false";
+    // Find the spam section and update only the enabled line within it
+    const spamSection = spamSectionMatch[0];
+    const updatedSpamSection = spamSection.replace(
+      spamEnabledRegex,
+      `$1${newEnabledValue}`
+    );
+    updatedContent = updatedContent.replace(
+      spamSectionMatch[0],
+      updatedSpamSection
+    );
+  }
+
+  // Update compute_unit_price if spam is enabled - FIXED
+  if (userConfig.spam.enabled && userConfig.spam.selectedOption) {
+    const selectedOption = userConfig.spam.selectedOption;
+    const computeUnitPriceRegex =
+      /(compute_unit_price\s*=\s*\{\s*strategy\s*=\s*)"[^"]*"(\s*,\s*from\s*=\s*)\d+(\s*,\s*to\s*=\s*)\d+(\s*,\s*count\s*=\s*)\d+(\s*\})/i;
+
+    const newComputeUnitPrice = `$1"${selectedOption.strategy}"$2${selectedOption.from}$3${selectedOption.to}$4${selectedOption.count}$5`;
+
+    if (computeUnitPriceRegex.test(updatedContent)) {
+      updatedContent = updatedContent.replace(
+        computeUnitPriceRegex,
+        newComputeUnitPrice
+      );
+    }
   }
 
   // Get existing tokens and add the current one if not already present
@@ -2265,7 +2522,7 @@ async function updateTomlFile(
 
   // Update merge_mints based on the number of tokens
   const mergeMintValue = existingTokens.length > 1 ? "true" : "false";
-  const mergeMintRegex = /merge_mints = (true|false)/i;
+  const mergeMintRegex = /merge_mints\s*=\s*(true|false)/i;
   const newMergeMint = `merge_mints = ${mergeMintValue}`;
 
   updatedContent = updatedContent.replace(mergeMintRegex, newMergeMint);
