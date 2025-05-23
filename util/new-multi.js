@@ -59,7 +59,7 @@ const CONFIG = {
     ],
     maxPoolsPerDex: {
       pumpswap: 1,
-      meteora: 1,
+      meteora: 2,
       raydium: 1,
       "raydium-clmm": 1,
       orca: 1, // Add a default value for Orca
