@@ -1027,61 +1027,49 @@ async function modifyConfig() {
 function removeTokenFromToml(tomlContent, tokenAddress) {
   console.log(`\nDEBUG: Attempting to remove token: ${tokenAddress}`);
 
-  // More robust regex that handles the entire mint_config_list section
-  // This regex finds the complete [[routing.mint_config_list]] section for the specific token
-  const mintSectionRegex = new RegExp(
-    `\\[\\[routing\\.mint_config_list\\]\\]\\s*\\n` + // Section header
-      `(?:[^\\[]*?\\n)*?` + // Any lines before mint
-      `mint\\s*=\\s*"${tokenAddress.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-      )}"\\s*\\n` + // Mint line (escaped special chars)
-      `(?:[^\\[]*?\\n)*?` + // All content until next section or end
-      `(?=\\[\\[routing\\.mint_config_list\\]\\]|\\[(?!\\[)|$)`, // Lookahead for next section or end
-    "gi"
-  );
-
-  const match = tomlContent.match(mintSectionRegex);
-
-  if (match && match.length > 0) {
-    console.log(`DEBUG: Found section to remove:\n${match[0]}`);
-
-    // Remove the matched section
-    const updatedContent = tomlContent.replace(mintSectionRegex, "");
-
-    // Clean up any double newlines that might be left
-    const cleanedContent = updatedContent.replace(/\n\n\n+/g, "\n\n");
-
-    console.log(`DEBUG: Token section removed successfully`);
-    return cleanedContent;
-  } else {
-    console.log(`DEBUG: No matching section found for token ${tokenAddress}`);
-
-    // Alternative approach - try to find commented sections too
-    const commentedSectionRegex = new RegExp(
-      `#\\s*\\[\\[routing\\.mint_config_list\\]\\]\\s*\\n` +
-        `(?:#[^\\[]*?\\n)*?` +
-        `#\\s*mint\\s*=\\s*"${tokenAddress.replace(
-          /[.*+?^${}()|[\]\\]/g,
-          "\\$&"
-        )}"\\s*\\n` +
-        `(?:#[^\\[]*?\\n)*?` +
-        `(?=\\[|#\\s*\\[|$)`,
-      "gi"
-    );
-
-    const commentedMatch = tomlContent.match(commentedSectionRegex);
-    if (commentedMatch && commentedMatch.length > 0) {
-      console.log(
-        `DEBUG: Found commented section to remove:\n${commentedMatch[0]}`
-      );
-      return tomlContent.replace(commentedSectionRegex, "");
+  // First, let's see what the actual structure looks like
+  console.log(`DEBUG: Looking for token sections in TOML...`);
+  
+  // More robust approach: Find all [[routing.mint_config_list]] sections
+  const sections = tomlContent.split(/(?=\[\[routing\.mint_config_list\]\])/);
+  
+  console.log(`DEBUG: Found ${sections.length} total sections`);
+  
+  // Look for the section containing our target token
+  let targetSectionIndex = -1;
+  let targetSection = null;
+  
+  for (let i = 1; i < sections.length; i++) { // Skip first empty section
+    const section = sections[i];
+    
+    // Check if this section contains our token
+    const mintLineRegex = new RegExp(`mint\\s*=\\s*"${tokenAddress.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+    
+    if (mintLineRegex.test(section)) {
+      console.log(`DEBUG: Found matching section at index ${i}`);
+      console.log(`DEBUG: Section content:\n${section.substring(0, 200)}...`);
+      targetSectionIndex = i;
+      targetSection = section;
+      break;
     }
   }
-
-  console.log(`DEBUG: Token ${tokenAddress} not found in configuration`);
-  return tomlContent;
+  
+  if (targetSectionIndex === -1) {
+    console.log(`DEBUG: Token ${tokenAddress} not found in any section`);
+    return tomlContent;
+  }
+  
+  // Remove the target section
+  const newSections = sections.filter((_, index) => index !== targetSectionIndex);
+  const updatedContent = newSections.join('');
+  
+  // Clean up any excessive newlines
+  const cleanedContent = updatedContent.replace(/\n\n\n+/g, '\n\n');
+  
+  console.log(`DEBUG: Token section removed successfully`);
+  return cleanedContent;
 }
+
 
 // Function for option 3: Modify Spam settings
 async function modifySpamSettings() {
