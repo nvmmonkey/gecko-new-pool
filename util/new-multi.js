@@ -1980,7 +1980,7 @@ async function readTomlFile(filePath) {
       const templateContent = `[routing]
 
 [rpc]
-url = "http://5.39.216.200:8899"
+url = "http://0.0.0.0:8899"
 
 [spam]
 enabled = true
@@ -2003,22 +2003,22 @@ block_engine_urls = [
 # ip_addresses = ["156.229.120.0/24"]
 #min_profit = 17000
 uuid = ""
-no_failure_mode = false
+no_failure_mode = true
 use_separate_tip_account = true
-block_engine_strategy = "OneByOne"
+block_engine_strategy = "AllAtOnce"
 
 [jito.tip_config]
 strategy = "Random"
-from = 6000
-to = 500500
-count = 4
+from = 5000
+to = 25500
+count = 1
 
 [kamino_flashloan]
 enabled = false
 
 [bot]
 base_mint = "So11111111111111111111111111111111111111112" # Optional, default to SOL
-compute_unit_limit = 438_000
+compute_unit_limit = 598_000
 merge_mints = false
 
 [wallet]
