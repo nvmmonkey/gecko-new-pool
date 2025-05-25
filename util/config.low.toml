@@ -1,1 +1,75 @@
 [routing]
+[[routing.mint_config_list]]
+mint = "Ey59PH7Z4BFU4HjyKnyMdWt5GGN76KazTAwQihoUXRnk"  #LAUNCHCOIN
+#pump_pool_list = [
+#  "example_address",
+#]
+meteora_dlmm_pool_list = [
+ "AjM8Qn62EhR4ikJ1rvyeezB1NyvrSsb4zwJiFUFs9ycs",
+ "DzTF9ZRoxngabYgXCrsNiuwTy4imkmrW6mQ621mUoZPi",
+]
+#raydium_pool_list = [
+#  "example_address",
+#]
+#raydium_cp_pool_list = [
+#  "example_address",
+#]
+#raydium_clmm_pool_list = [
+#  "example_address",
+#]
+#whirlpool_pool_list = [
+#  "example_address",
+#]
+#solfi_pool_list = [
+#  "example_address",
+#]
+lookup_table_accounts = [
+  "4sKLJ1Qoudh8PJyqBeuKocYdsZvxTcRShUt9aKqwhgvC",
+  "8mRar7rLwwuM4Nx8fJaAoLBgUMXNMggyLJGsYtxvbbLR",
+]
+process_delay = 400
+
+
+[rpc]
+url = "http://0.0.0.0:8899"
+
+[spam]
+enabled = true
+sending_rpc_urls = [
+  "http://rpc-ams.thornode.io",
+]
+compute_unit_price = { strategy = "Random", from = 28311, to = 488111, count = 1 }
+skip_preflight = true
+
+[jito]
+enabled = false
+block_engine_urls = [
+  "https://ny.mainnet.block-engine.jito.wtf/api/v1",
+  "https://slc.mainnet.block-engine.jito.wtf/api/v1",
+  "https://amsterdam.mainnet.block-engine.jito.wtf/api/v1",
+  "https://london.mainnet.block-engine.jito.wtf/api/v1",
+  "https://frankfurt.mainnet.block-engine.jito.wtf/api/v1",
+  "https://mainnet.block-engine.jito.wtf/api/v1",
+]
+# ip_addresses = ["156.229.120.0/24"]
+#min_profit = 17000
+uuid = ""
+no_failure_mode = true
+use_separate_tip_account = true
+block_engine_strategy = "AllAtOnce"
+
+[jito.tip_config]
+strategy = "Random"
+from = 5000
+to = 25500
+count = 1
+
+[kamino_flashloan]
+enabled = false
+
+[bot]
+base_mint = "So11111111111111111111111111111111111111112" # Optional, default to SOL
+compute_unit_limit = 598_000
+merge_mints = false
+
+[wallet]

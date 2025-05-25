@@ -70,6 +70,7 @@ const CONFIG = {
       pumpswap: "pump_pool_list",
       meteora: "meteora_dlmm_pool_list",
       raydium: "raydium_pool_list",
+      "raydium-cpmm": "raydium_cp_pool_list",
       "raydium-clmm": "raydium_clmm_pool_list",
       orca: "whirlpool_pool_list", // Add the appropriate field name for Orca
       solfi: "solfi_pool_list",
@@ -866,6 +867,10 @@ async function searchAndUpdate() {
   }
 
   // Update TOML file for each token - no confirmation needed
+
+  // In the searchAndUpdate function, update this part:
+
+  // Update TOML file for each token - no confirmation needed
   let updatedContent = tomlContent;
   let tokenCount = existingTokens.length;
 
@@ -874,7 +879,8 @@ async function searchAndUpdate() {
       updatedContent,
       token.tokenAddress,
       token.selectedPools,
-      userConfig
+      userConfig,
+      token.tokenSymbol // Add this parameter
     );
     updatedContent = result.updatedContent;
     tokenCount = result.tokenCount;
@@ -1024,52 +1030,110 @@ async function modifyConfig() {
 }
 
 // Function to remove a token from the TOML content
+// Function to remove a token from the TOML content
 function removeTokenFromToml(tomlContent, tokenAddress) {
   console.log(`\nDEBUG: Attempting to remove token: ${tokenAddress}`);
-
-  // First, let's see what the actual structure looks like
   console.log(`DEBUG: Looking for token sections in TOML...`);
-  
-  // More robust approach: Find all [[routing.mint_config_list]] sections
-  const sections = tomlContent.split(/(?=\[\[routing\.mint_config_list\]\])/);
-  
-  console.log(`DEBUG: Found ${sections.length} total sections`);
-  
-  // Look for the section containing our target token
-  let targetSectionIndex = -1;
-  let targetSection = null;
-  
-  for (let i = 1; i < sections.length; i++) { // Skip first empty section
-    const section = sections[i];
-    
-    // Check if this section contains our token
-    const mintLineRegex = new RegExp(`mint\\s*=\\s*"${tokenAddress.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
-    
-    if (mintLineRegex.test(section)) {
-      console.log(`DEBUG: Found matching section at index ${i}`);
-      console.log(`DEBUG: Section content:\n${section.substring(0, 200)}...`);
-      targetSectionIndex = i;
-      targetSection = section;
-      break;
-    }
-  }
-  
-  if (targetSectionIndex === -1) {
-    console.log(`DEBUG: Token ${tokenAddress} not found in any section`);
+
+  // Escape special regex characters in the token address
+  const escapedAddress = tokenAddress.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // First, try to find the section with a more flexible approach
+  // This will find both regular and commented sections
+
+  // Method 1: Find section starting with [[routing.mint_config_list]] (with or without #)
+  let startIndex = -1;
+  let endIndex = -1;
+
+  // Find all occurrences of mint = "address" to locate our token
+  const mintLineRegex = new RegExp(`mint\\s*=\\s*"${escapedAddress}"`, "gim");
+  const mintMatch = mintLineRegex.exec(tomlContent);
+
+  if (!mintMatch) {
+    console.log(`DEBUG: Token ${tokenAddress} not found`);
     return tomlContent;
   }
-  
-  // Remove the target section
-  const newSections = sections.filter((_, index) => index !== targetSectionIndex);
-  const updatedContent = newSections.join('');
-  
-  // Clean up any excessive newlines
-  const cleanedContent = updatedContent.replace(/\n\n\n+/g, '\n\n');
-  
+
+  // Found the mint line, now find the section boundaries
+  const mintLineIndex = mintMatch.index;
+
+  // Search backwards from mint line to find section start
+  // Look for [[routing.mint_config_list]] with or without comment
+  const beforeMint = tomlContent.substring(0, mintLineIndex);
+  const sectionStartRegex =
+    /(?:^|\n)(#*\s*\[\[routing\.mint_config_list\]\])/gim;
+
+  let lastSectionStart = -1;
+  let match;
+  while ((match = sectionStartRegex.exec(beforeMint)) !== null) {
+    lastSectionStart = match.index + (match[0].startsWith("\n") ? 1 : 0);
+  }
+
+  if (lastSectionStart === -1) {
+    console.log(`DEBUG: Could not find section start for token`);
+    return tomlContent;
+  }
+
+  startIndex = lastSectionStart;
+
+  // Now find the end of this section
+  // Look for the next section header or end of file
+  const afterMint = tomlContent.substring(mintLineIndex);
+  const nextSectionRegex =
+    /\n\s*(#*\s*\[\[routing\.mint_config_list\]\]|#*\s*\[[^\]]+\])/;
+  const nextSectionMatch = nextSectionRegex.exec(afterMint);
+
+  if (nextSectionMatch) {
+    endIndex = mintLineIndex + nextSectionMatch.index;
+  } else {
+    // No next section found, this is the last section
+    endIndex = tomlContent.length;
+  }
+
+  // Extract the section to be removed
+  const sectionToRemove = tomlContent.substring(startIndex, endIndex);
+  console.log(`DEBUG: Found section from index ${startIndex} to ${endIndex}`);
+  console.log(
+    `DEBUG: Section content:\n${sectionToRemove.substring(0, 200)}...`
+  );
+
+  // Remove the section
+  let updatedContent =
+    tomlContent.substring(0, startIndex) + tomlContent.substring(endIndex);
+
+  // Clean up excessive newlines
+  updatedContent = cleanupNewlines(updatedContent);
+
   console.log(`DEBUG: Token section removed successfully`);
-  return cleanedContent;
+  return updatedContent;
 }
 
+// Helper function to clean up excessive newlines and formatting
+function cleanupNewlines(content) {
+  // Replace 3 or more consecutive newlines with 2
+  content = content.replace(/\n{3,}/g, "\n\n");
+
+  // Clean up spacing before section headers
+  content = content.replace(/\n\n+(?=\[)/g, "\n\n");
+
+  // Clean up spacing at the start of the file
+  content = content.replace(/^\n+/, "");
+
+  // Clean up spacing at the end of the file
+  content = content.replace(/\n\n+$/, "\n");
+
+  // Clean up any orphaned comment markers
+  content = content.replace(/\n#\s*\n(?=\n)/g, "\n");
+
+  // Ensure [routing] section doesn't have trailing commented content
+  // This specifically handles the case where commented pool lists are left behind
+  content = content.replace(
+    /(\[routing\]\n(?:[^\[]*))\n+(#[^[]*?)(?=\n*\[)/g,
+    "$1\n"
+  );
+
+  return content;
+}
 
 // Function for option 3: Modify Spam settings
 async function modifySpamSettings() {
@@ -2268,7 +2332,8 @@ async function updateTomlFile(
   tomlContent,
   tokenAddress,
   selectedPools,
-  userConfig
+  userConfig,
+  tokenSymbol = null // Add tokenSymbol as parameter
 ) {
   let updatedContent = tomlContent;
 
@@ -2283,6 +2348,17 @@ async function updateTomlFile(
 
   if (mintSection) {
     let newMintSection = mintSection[0];
+
+    // Store the mint line format for later use
+    let mintLineFormat = `mint = "${tokenAddress}"`;
+
+    // Update the mint line to include token symbol if provided
+    if (tokenSymbol) {
+      const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+      const newMintLine = `mint = "${tokenAddress}"  #${tokenSymbol}`;
+      newMintSection = newMintSection.replace(mintLineRegex, newMintLine);
+      mintLineFormat = newMintLine; // Update the format for later use
+    }
 
     // Update each DEX pool list
     for (const dex of Object.keys(CONFIG.tomlConfig.dexToFieldName)) {
@@ -2318,10 +2394,14 @@ async function updateTomlFile(
         }
         // Otherwise, add the pool list after the mint line
         else {
-          const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+          // Use a regex that matches the mint line with or without comment
+          const mintLineWithOptionalComment = new RegExp(
+            `mint = "${tokenAddress}"(?:\\s*#[^\\n]*)?`,
+            "i"
+          );
           newMintSection = newMintSection.replace(
-            mintLineRegex,
-            `mint = "${tokenAddress}"\n${newPoolList}`
+            mintLineWithOptionalComment,
+            `${mintLineFormat}\n${newPoolList}`
           );
         }
       } else {
@@ -2348,10 +2428,14 @@ async function updateTomlFile(
       newMintSection = newMintSection.replace(lookupTableRegex, newLookupTable);
     } else {
       // Add lookup table after a pool list or the mint line
-      const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+      // Use a regex that matches the mint line with or without comment
+      const mintLineWithOptionalComment = new RegExp(
+        `mint = "${tokenAddress}"(?:\\s*#[^\\n]*)?`,
+        "i"
+      );
       newMintSection = newMintSection.replace(
-        mintLineRegex,
-        `mint = "${tokenAddress}"\n${newLookupTable}`
+        mintLineWithOptionalComment,
+        `${mintLineFormat}\n${newLookupTable}`
       );
     }
 
@@ -2375,10 +2459,14 @@ async function updateTomlFile(
           );
         }
       } else {
-        const mintLineRegex = new RegExp(`mint = "${tokenAddress}"`, "i");
+        // Use a regex that matches the mint line with or without comment
+        const mintLineWithOptionalComment = new RegExp(
+          `mint = "${tokenAddress}"(?:\\s*#[^\\n]*)?`,
+          "i"
+        );
         newMintSection = newMintSection.replace(
-          mintLineRegex,
-          `mint = "${tokenAddress}"\n${newProcessDelay}`
+          mintLineWithOptionalComment,
+          `${mintLineFormat}\n${newProcessDelay}`
         );
       }
     }
@@ -2387,7 +2475,9 @@ async function updateTomlFile(
     updatedContent = updatedContent.replace(mintSectionRegex, newMintSection);
   } else {
     // If we don't have a section for this token, create a new one
-    let newMintSection = `[[routing.mint_config_list]]\nmint = "${tokenAddress}"\n`;
+    let newMintSection = `[[routing.mint_config_list]]\nmint = "${tokenAddress}"${
+      tokenSymbol ? `  #${tokenSymbol}` : ""
+    }\n`;
 
     // Add each DEX pool list
     for (const dex of Object.keys(CONFIG.tomlConfig.dexToFieldName)) {
