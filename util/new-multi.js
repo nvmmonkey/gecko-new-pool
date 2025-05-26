@@ -74,6 +74,7 @@ const CONFIG = {
       "raydium-clmm": "raydium_clmm_pool_list",
       orca: "whirlpool_pool_list", // Add the appropriate field name for Orca
       solfi: "solfi_pool_list",
+      dammV2: "meteora_dammv2_pool_list",
     },
   },
 
