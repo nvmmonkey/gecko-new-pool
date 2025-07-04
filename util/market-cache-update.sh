@@ -10,7 +10,7 @@
 #   AUTO_RERUN_MINUTES=0    # Run once and exit
 #   AUTO_RERUN_MINUTES=30   # Run every 30 minutes
 #   AUTO_RERUN_MINUTES=60   # Run every hour
-AUTO_RERUN_MINUTES=0
+AUTO_RERUN_MINUTES=60
 
 # ============ FILE PATHS ============
 MARKET_CACHE_URL="https://cache.jup.ag/markets?v=4"
