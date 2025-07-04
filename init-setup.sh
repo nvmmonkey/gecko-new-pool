@@ -40,6 +40,8 @@ git clone https://github.com/nvmmonkey/gecko-new-pool.git
 cd gecko-new-pool
 cp *.json ~/jup
 cp *.js ~/jup
+cp ~/gecko-new-pool/util/market-cache-update.sh ~/jup
+cp ~/gecko-new-pool/util/mainnet.json ~/jup
 cd ~/jup
 npm install
 cd ~/
