@@ -1,0 +1,42 @@
+[
+  {
+    "pubkey": "5BUwFW4nRbftYTDMbgxykoFWqWHPzahFSNAaaaJtVKsq",
+    "owner": "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu",
+    "params": {
+      "addressLookupTableAddress": "Ak38egnSBV9mHL4NUXupB6FASTyBYjt4qe4tGkcziv99",
+      "routingGroup": 3
+    }
+  },
+  {
+    "pubkey": "9tYjoG9A1icdu5Q5bSme41sCW5BpMt9wk61Kxv5Pk3qx",
+    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
+    "params": {
+      "addressLookupTableAddress": "ApakneedSpudfLH6bvSBWEsLfJGaA7cXWsQgq2rbzDq8",
+      "routingGroup": 3
+    }
+  },
+  {
+    "pubkey": "FksffEqnBRixYGR791Qw2MgdU7zNCpHVFYBL4Fa4qVuH",
+    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
+    "params": {
+      "addressLookupTableAddress": "7U2UmEFVRVoenZ4bviXLZ3eTC9wTBe3vTEHAFvKhmiQ5",
+      "routingGroup": 3
+    }
+  },
+  {
+    "pubkey": "HDqJgdwD6WLx1fyd8EKJNZxkXDq2WwA7PCmH7d1YiUox",
+    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
+    "params": {
+      "addressLookupTableAddress": "ApakneedSpudfLH6bvSBWEsLfJGaA7cXWsQgq2rbzDq8",
+      "routingGroup": 3
+    }
+  },
+  {
+    "pubkey": "4ynTYgJK5ruYx3AZMRjCHrJk1qkm61fePF7dkbvRQD46",
+    "owner": "goonERTdGsjnkZqWuVjs73BZ3Pb9qoCUdBUL17BnS5j",
+    "params": {
+      "addressLookupTableAddress": "B6QgPTgp19wicoCN1VaHhnjCU98Zkg3r8ffEL6ta7gvi",
+      "routingGroup": 3
+    }
+  }
+]
