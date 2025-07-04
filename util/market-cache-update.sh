@@ -3,6 +3,7 @@
 # download_market_cache.sh
 # Downloads the latest market cache from Jupiter API and merges with custom markets
 # Supports auto-rerun with configurable interval
+# Now includes git pull and custom market file sync
 
 # ============ CONFIGURATION ============
 # Set AUTO_RERUN_MINUTES to 0 for single run, or any number > 0 for auto-rerun
@@ -12,12 +13,88 @@
 #   AUTO_RERUN_MINUTES=60   # Run every hour
 AUTO_RERUN_MINUTES=60
 
+# Git and file sync configuration
+GECKO_REPO_PATH="$HOME/gecko-new-pool"
+CUSTOM_MARKET_SOURCE="$HOME/gecko-new-pool/util/custom_market.json"
+JUP_DIRECTORY="$HOME/jup"
+ENABLE_GIT_SYNC=true  # Set to false to disable git operations
+
 # ============ FILE PATHS ============
 MARKET_CACHE_URL="https://cache.jup.ag/markets?v=4"
 RAW_FILE="raw_mainnet.json"
 CUSTOM_FILE="custom_market.json"
 OUTPUT_FILE="mainnet.json"
 BACKUP_FILE="mainnet.json.backup"
+
+sync_git_and_files() {
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] Starting git sync and file updates..."
+    
+    if [ "$ENABLE_GIT_SYNC" = false ]; then
+        echo "Git sync disabled in configuration, skipping..."
+        return 0
+    fi
+    
+    # Check if gecko repo directory exists
+    if [ ! -d "$GECKO_REPO_PATH" ]; then
+        echo "✗ ERROR: Gecko repository not found at $GECKO_REPO_PATH"
+        echo "Please ensure the repository is cloned to the correct location"
+        return 1
+    fi
+    
+    # Navigate to gecko repo and pull latest changes
+    echo "Navigating to $GECKO_REPO_PATH"
+    cd "$GECKO_REPO_PATH" || {
+        echo "✗ ERROR: Failed to navigate to $GECKO_REPO_PATH"
+        return 1
+    }
+    
+    echo "Pulling latest changes from git..."
+    if git pull; then
+        echo "✓ Git pull completed successfully"
+    else
+        echo "⚠ WARNING: Git pull failed, continuing with existing files"
+        echo "This might be due to local changes or network issues"
+    fi
+    
+    # Check if custom market source file exists
+    if [ ! -f "$CUSTOM_MARKET_SOURCE" ]; then
+        echo "✗ WARNING: Custom market source file not found at $CUSTOM_MARKET_SOURCE"
+        echo "Continuing without custom markets..."
+        return 0
+    fi
+    
+    # Create jup directory if it doesn't exist
+    mkdir -p "$JUP_DIRECTORY"
+    
+    # Navigate back to jup directory
+    cd "$JUP_DIRECTORY" || {
+        echo "✗ ERROR: Failed to navigate to $JUP_DIRECTORY"
+        return 1
+    }
+    
+    # Copy custom market file
+    echo "Copying custom market file..."
+    if cp "$CUSTOM_MARKET_SOURCE" "$JUP_DIRECTORY/$CUSTOM_FILE"; then
+        echo "✓ Custom market file copied successfully"
+        echo "  From: $CUSTOM_MARKET_SOURCE"
+        echo "  To: $JUP_DIRECTORY/$CUSTOM_FILE"
+        
+        # Validate the copied file
+        if jq empty "$CUSTOM_FILE" 2>/dev/null; then
+            custom_count=$(jq '. | length' "$CUSTOM_FILE")
+            echo "✓ Custom market file validation passed ($custom_count markets)"
+        else
+            echo "⚠ WARNING: Copied custom market file is not valid JSON"
+        fi
+    else
+        echo "✗ ERROR: Failed to copy custom market file"
+        return 1
+    fi
+    
+    echo "✓ Git sync and file updates completed"
+    return 0
+}
 
 download_and_merge_markets() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -118,6 +195,19 @@ download_and_merge_markets() {
     fi
 }
 
+run_complete_cycle() {
+    # First sync git and files
+    echo "========================================"
+    sync_git_and_files
+    
+    # Then download and merge markets
+    echo ""
+    echo "========================================"
+    download_and_merge_markets
+    
+    return $?
+}
+
 # Signal handler for graceful shutdown
 cleanup() {
     echo ""
@@ -128,11 +218,27 @@ cleanup() {
 # Set up signal trap
 trap cleanup SIGINT SIGTERM
 
+# Ensure we're in the correct directory
+cd "$JUP_DIRECTORY" || {
+    echo "Creating jup directory: $JUP_DIRECTORY"
+    mkdir -p "$JUP_DIRECTORY"
+    cd "$JUP_DIRECTORY" || {
+        echo "✗ ERROR: Failed to create or navigate to $JUP_DIRECTORY"
+        exit 1
+    }
+}
+
+echo "Working directory: $(pwd)"
+echo "Git sync enabled: $ENABLE_GIT_SYNC"
+echo "Gecko repo path: $GECKO_REPO_PATH"
+echo "Custom market source: $CUSTOM_MARKET_SOURCE"
+echo ""
+
 # Main execution logic
 if [ "$AUTO_RERUN_MINUTES" -eq 0 ]; then
     # Single run mode
     echo "Running market cache download once..."
-    download_and_merge_markets
+    run_complete_cycle
     exit $?
 else
     # Auto-rerun mode
@@ -147,7 +253,7 @@ else
     fi
     
     # Initial run
-    download_and_merge_markets
+    run_complete_cycle
     
     # Auto-rerun loop
     while true; do
@@ -160,6 +266,6 @@ else
         
         echo ""
         echo "========================================"
-        download_and_merge_markets
+        run_complete_cycle
     done
 fi
