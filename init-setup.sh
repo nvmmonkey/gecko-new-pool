@@ -42,6 +42,7 @@ cp *.json ~/jup
 cp *.js ~/jup
 cp ~/gecko-new-pool/util/market-cache-update.sh ~/jup
 cp ~/gecko-new-pool/util/mainnet.json ~/jup
+cp ~/gecko-new-pool/util/custom_market.json ~/jup
 cd ~/jup
 npm install
 cd ~/
