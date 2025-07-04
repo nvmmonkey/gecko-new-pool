@@ -17,6 +17,7 @@ MARKET_CACHE_URL="https://cache.jup.ag/markets?v=4"
 RAW_FILE="raw_mainnet.json"
 CUSTOM_FILE="custom_market.json"
 OUTPUT_FILE="mainnet.json"
+BACKUP_FILE="mainnet.json.backup"
 
 download_and_merge_markets() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -85,9 +86,15 @@ download_and_merge_markets() {
     # Final validation and summary
     if jq empty "$OUTPUT_FILE" 2>/dev/null; then
         final_count=$(jq '. | length' "$OUTPUT_FILE")
+        
+        # Store the latest mainnet.json as backup for the other script
+        echo "Creating backup for main script: $BACKUP_FILE"
+        cp "$OUTPUT_FILE" "$BACKUP_FILE"
+        
         echo ""
         echo "=== SUMMARY ==="
         echo "✓ Final market cache created: $OUTPUT_FILE"
+        echo "✓ Backup created: $BACKUP_FILE"
         echo "✓ Total markets: $final_count"
         
         # Show sample of markets (including any custom ones at the end)
