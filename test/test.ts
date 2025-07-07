@@ -159,7 +159,7 @@ function decodeTransactionData(transactionData) {
     // Handle address table lookups
     if (decoded.transaction.transaction?.message?.addressTableLookups) {
       decoded.transaction.transaction.message.addressTableLookups = 
-        decoded.transaction.transaction.message.addressTableLookups.map(lookup => {
+        decoded.transaction.transaction.message.addressTableLookups.map((lookup: any) => {
           const converted = { ...lookup };
           if (lookup.accountKey?.type === 'Buffer') {
             converted.accountKey = bs58.encode(Buffer.from(lookup.accountKey.data));
@@ -177,7 +177,7 @@ function decodeTransactionData(transactionData) {
     // Handle instructions
     if (decoded.transaction.transaction?.message?.instructions) {
       decoded.transaction.transaction.message.instructions = 
-        decoded.transaction.transaction.message.instructions.map(instruction => {
+        decoded.transaction.transaction.message.instructions.map((instruction: any) => {
           const converted = { ...instruction };
           if (instruction.data?.type === 'Buffer') {
             converted.data = Buffer.from(instruction.data.data).toString('hex');
@@ -192,7 +192,7 @@ function decodeTransactionData(transactionData) {
     // Handle loaded addresses
     if (decoded.transaction.meta?.loadedWritableAddresses) {
       decoded.transaction.meta.loadedWritableAddresses = 
-        decoded.transaction.meta.loadedWritableAddresses.map(addr => {
+        decoded.transaction.meta.loadedWritableAddresses.map((addr: any) => {
           if (addr.type === 'Buffer') {
             return bs58.encode(Buffer.from(addr.data));
           }
@@ -202,7 +202,7 @@ function decodeTransactionData(transactionData) {
     
     if (decoded.transaction.meta?.loadedReadonlyAddresses) {
       decoded.transaction.meta.loadedReadonlyAddresses = 
-        decoded.transaction.meta.loadedReadonlyAddresses.map(addr => {
+        decoded.transaction.meta.loadedReadonlyAddresses.map((addr: any) => {
           if (addr.type === 'Buffer') {
             return bs58.encode(Buffer.from(addr.data));
           }
@@ -320,7 +320,7 @@ async function handleStream(client: Client, args: any): Promise<void> {
   
   // Send the subscription request
   await new Promise<void>((resolve, reject) => {
-    stream.write(args, (err) => {
+    stream.write(args, (err: any) => {
       err ? reject(err) : resolve();
     });
   }).catch((err) => {
