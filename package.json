@@ -16,6 +16,7 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
+    "@types/bs58": "^4.0.4",
     "@types/node": "^24.0.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
