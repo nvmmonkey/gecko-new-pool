@@ -14,5 +14,10 @@
     "@triton-one/yellowstone-grpc": "1.4.1",
     "axios": "^1.7.9",
     "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
