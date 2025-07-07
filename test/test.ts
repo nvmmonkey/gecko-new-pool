@@ -21,8 +21,8 @@ const CONFIG = {
   
   // Monitoring Settings
   ADDRESSES_TO_MONITOR: [
-    "HgQy5bqJd3GcjqakukhfMpqAfP62nTxGiqAqh4QtTuHF",
-    "8pQYy5peKKqKk34BvJBuuBAfakukTLsmT2MVSzijUgt1"
+    "Lucky73WpiBVVgnZm8458en4EwR5eg8hP18oCjkaMUZ",
+    "BgcQGcYAst2nTMpchx8U3eCDHCkC52UGM62AH9LGSM16"
   ],
   
   // File Settings
