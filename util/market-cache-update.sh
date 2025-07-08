@@ -50,7 +50,7 @@ sync_git_and_files() {
     }
     
     echo "Pulling latest changes from git..."
-    if git pull; then
+    if git pull --force; then
         echo "✓ Git pull completed successfully"
     else
         echo "⚠ WARNING: Git pull failed, continuing with existing files"
