@@ -49,12 +49,19 @@ sync_git_and_files() {
         return 1
     }
     
-    echo "Pulling latest changes from git..."
-    if git pull --force; then
-        echo "✓ Git pull completed successfully"
+    echo "Pulling latest changes from git (discarding local changes)..."
+    
+    # Force pull by discarding any local changes
+    git fetch origin
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    
+    if git reset --hard "origin/$current_branch"; then
+        echo "✓ Git sync completed successfully"
+        echo "✓ Using original files from GitHub"
     else
-        echo "⚠ WARNING: Git pull failed, continuing with existing files"
-        echo "This might be due to local changes or network issues"
+        echo "✗ ERROR: Git sync failed, continuing with existing files"
+        echo "This might be due to network issues or repository problems"
+        return 1
     fi
     
     # Check if custom market source file exists
