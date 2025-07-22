@@ -308,6 +308,7 @@ cleanup_old_instances() {
 run_main_loop() {
     while true; do
         # Copy token-cache.json
+        sudo rm PRIVATEKEY && sudo cp ~/rust-mev-bot-shared/PRIVATEKEY ./
         cp ~/jup/token-cache.json ./
         log_info "复制token-cache成功"
         cp ~/jup/minfile.json ./
