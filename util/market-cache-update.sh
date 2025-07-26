@@ -30,7 +30,8 @@ TEMP_FILE="temp_filtered.json"
 
 sync_git_and_files() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    cp ~/gecko-new-pool/util/run-jup.sh ~/jup
+
+
     echo "[$timestamp] Starting git sync and file updates..."
     
     if [ "$ENABLE_GIT_SYNC" = false ]; then
@@ -59,6 +60,9 @@ sync_git_and_files() {
     current_branch=$(git rev-parse --abbrev-ref HEAD)
     
     if git reset --hard "origin/$current_branch"; then
+        cp ~/gecko-new-pool/util/run-jup.sh ~/jup
+        cp ~/gecko-new-pool/util/custom_market.json ~/jup
+        cp ~/gecko-new-pool/util/exclude_market.json ~/jup
         echo "✓ Git sync completed successfully"
         echo "✓ Using original files from GitHub"
     else
