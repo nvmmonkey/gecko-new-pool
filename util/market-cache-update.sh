@@ -30,6 +30,7 @@ TEMP_FILE="temp_filtered.json"
 
 sync_git_and_files() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    cp ~/gecko-new-pool/util/run-jup.sh ~/jup
     echo "[$timestamp] Starting git sync and file updates..."
     
     if [ "$ENABLE_GIT_SYNC" = false ]; then
