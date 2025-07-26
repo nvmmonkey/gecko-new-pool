@@ -3,7 +3,7 @@
 # download_market_cache.sh
 # Downloads the latest market cache from Jupiter API and merges with custom markets
 # Supports auto-rerun with configurable interval
-# Now includes git pull and custom market file sync
+# Now includes git pull, custom market file sync, and market exclusion functionality
 
 # ============ CONFIGURATION ============
 # Set AUTO_RERUN_MINUTES to 0 for single run, or any number > 0 for auto-rerun
@@ -23,8 +23,10 @@ ENABLE_GIT_SYNC=true  # Set to false to disable git operations
 MARKET_CACHE_URL="https://cache.jup.ag/markets?v=4"
 RAW_FILE="raw_mainnet.json"
 CUSTOM_FILE="custom_market.json"
+EXCLUDE_FILE="exclude_market.json"
 OUTPUT_FILE="mainnet.json"
 BACKUP_FILE="mainnet.json.backup"
+TEMP_FILE="temp_filtered.json"
 
 sync_git_and_files() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -103,6 +105,97 @@ sync_git_and_files() {
     return 0
 }
 
+filter_excluded_markets() {
+    local input_file="$1"
+    local output_file="$2"
+    
+    echo ""
+    echo "Checking for excluded markets..."
+    
+    # Check if exclude file exists
+    if [ ! -f "$EXCLUDE_FILE" ]; then
+        echo "No exclude file found ($EXCLUDE_FILE), skipping market filtering"
+        cp "$input_file" "$output_file"
+        return 0
+    fi
+    
+    # Validate exclude file JSON format
+    if ! jq empty "$EXCLUDE_FILE" 2>/dev/null; then
+        echo "✗ WARNING: Exclude file is not valid JSON, skipping market filtering"
+        cp "$input_file" "$output_file"
+        return 0
+    fi
+    
+    # Check if exclude file is an array
+    if [ "$(jq -r 'type' "$EXCLUDE_FILE")" != "array" ]; then
+        echo "✗ WARNING: Exclude file must be an array of pubkeys, skipping market filtering"
+        cp "$input_file" "$output_file"
+        return 0
+    fi
+    
+    local exclude_count=$(jq '. | length' "$EXCLUDE_FILE")
+    echo "✓ Found exclude file with $exclude_count pubkeys to filter out"
+    
+    # Show what pubkeys we're looking to exclude
+    echo "Pubkeys to exclude:"
+    jq -r '.[] | "  - " + .' "$EXCLUDE_FILE"
+    
+    # Get count before filtering
+    local before_count=$(jq '. | length' "$input_file")
+    
+    # Filter out excluded markets using jq
+    # This creates a new array excluding any objects where .pubkey matches any value in the exclude list
+    if jq --argjson excludelist "$(cat "$EXCLUDE_FILE")" \
+        'map(select(.pubkey as $pk | $excludelist | index($pk) == null))' \
+        "$input_file" > "$output_file"; then
+        
+        local after_count=$(jq '. | length' "$output_file")
+        local filtered_count=$((before_count - after_count))
+        
+        echo "✓ Market filtering completed successfully"
+        echo "  - Markets before filtering: $before_count"
+        echo "  - Markets after filtering: $after_count"
+        echo "  - Markets filtered out: $filtered_count"
+        
+        # Show which markets were actually filtered (if any)
+        if [ "$filtered_count" -gt 0 ]; then
+            echo ""
+            echo "Markets that were filtered out (matching exclude list):"
+            jq --argjson excludelist "$(cat "$EXCLUDE_FILE")" -r \
+                'map(select(.pubkey as $pk | $excludelist | index($pk) != null)) | .[] | "  - \(.pubkey) (\(.owner // "unknown owner"))"' \
+                "$input_file" | head -10
+            
+            if [ "$filtered_count" -gt 10 ]; then
+                echo "  ... and $((filtered_count - 10)) more"
+            fi
+        else
+            echo ""
+            echo "⚠ No markets were filtered - none of the excluded pubkeys were found in the market data"
+            echo "This could mean:"
+            echo "  1. The pubkeys in exclude_market.json don't exist in the current market data"
+            echo "  2. The pubkeys might be formatted incorrectly"
+            echo ""
+            echo "Checking if any markets contain similar pubkeys (first few characters)..."
+            for pubkey in $(jq -r '.[]' "$EXCLUDE_FILE"); do
+                local prefix="${pubkey:0:8}"
+                local matches=$(jq -r --arg prefix "$prefix" 'map(select(.pubkey | startswith($prefix))) | length' "$input_file")
+                if [ "$matches" -gt 0 ]; then
+                    echo "  Found $matches markets starting with '$prefix' (from $pubkey)"
+                    jq -r --arg prefix "$prefix" 'map(select(.pubkey | startswith($prefix))) | .[0:2] | .[] | "    Example: \(.pubkey)"' "$input_file"
+                else
+                    echo "  No markets found starting with '$prefix' (from $pubkey)"
+                fi
+            done
+        fi
+        
+        return 0
+    else
+        echo "✗ ERROR: Failed to filter markets, using unfiltered version"
+        cp "$input_file" "$output_file"
+        return 1
+    fi
+}
+
 download_and_merge_markets() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$timestamp] Starting market cache download and merge..."
@@ -127,7 +220,7 @@ download_and_merge_markets() {
         return 1
     fi
 
-    # Check if custom markets file exists
+    # Check if custom markets file exists and merge
     if [ -f "$CUSTOM_FILE" ]; then
         echo ""
         echo "Found custom markets file: $CUSTOM_FILE"
@@ -142,10 +235,10 @@ download_and_merge_markets() {
             echo "Merging raw markets with custom markets..."
             
             # Merge raw markets with custom markets using jq
-            if jq -s '.[0] + .[1]' "$RAW_FILE" "$CUSTOM_FILE" > "$OUTPUT_FILE"; then
-                total_count=$(jq '. | length' "$OUTPUT_FILE")
+            if jq -s '.[0] + .[1]' "$RAW_FILE" "$CUSTOM_FILE" > "$TEMP_FILE"; then
+                total_count=$(jq '. | length' "$TEMP_FILE")
                 echo "✓ Markets merged successfully!"
-                echo "✓ Total markets in $OUTPUT_FILE: $total_count"
+                echo "✓ Total markets before filtering: $total_count"
                 echo "  - Raw markets: $raw_count"
                 echo "  - Custom markets: $custom_count"
                 echo "  - Combined total: $total_count"
@@ -156,22 +249,26 @@ download_and_merge_markets() {
         else
             echo "✗ ERROR: Custom markets file is not valid JSON!"
             echo "Using only raw markets..."
-            cp "$RAW_FILE" "$OUTPUT_FILE"
-            echo "✓ Raw markets copied to $OUTPUT_FILE"
+            cp "$RAW_FILE" "$TEMP_FILE"
+            echo "✓ Raw markets copied to temporary file"
         fi
     else
         echo ""
         echo "No custom markets file found ($CUSTOM_FILE)"
         echo "Using only raw markets..."
-        cp "$RAW_FILE" "$OUTPUT_FILE"
-        echo "✓ Raw markets copied to $OUTPUT_FILE"
+        cp "$RAW_FILE" "$TEMP_FILE"
+        echo "✓ Raw markets copied to temporary file"
     fi
+
+    # Apply exclusion filtering
+    filter_excluded_markets "$TEMP_FILE" "$OUTPUT_FILE"
 
     # Final validation and summary
     if jq empty "$OUTPUT_FILE" 2>/dev/null; then
         final_count=$(jq '. | length' "$OUTPUT_FILE")
         
         # Store the latest mainnet.json as backup for the other script
+        echo ""
         echo "Creating backup for main script: $BACKUP_FILE"
         cp "$OUTPUT_FILE" "$BACKUP_FILE"
         
@@ -179,7 +276,7 @@ download_and_merge_markets() {
         echo "=== SUMMARY ==="
         echo "✓ Final market cache created: $OUTPUT_FILE"
         echo "✓ Backup created: $BACKUP_FILE"
-        echo "✓ Total markets: $final_count"
+        echo "✓ Total markets after all processing: $final_count"
         
         # Show sample of markets (including any custom ones at the end)
         echo ""
@@ -192,12 +289,16 @@ download_and_merge_markets() {
             jq '.[-2:] | .[] | {pubkey: .pubkey, owner: .owner}' "$OUTPUT_FILE"
         fi
         
+        # Clean up temporary file
+        rm -f "$TEMP_FILE"
+        
         echo ""
         echo "Market cache is ready for use!"
         echo "Set USE_LOCAL_MARKET_CACHE=true in your environment to use it."
         return 0
     else
         echo "✗ ERROR: Final output file is not valid JSON!"
+        rm -f "$TEMP_FILE"
         exit 1
     fi
 }
@@ -219,6 +320,8 @@ run_complete_cycle() {
 cleanup() {
     echo ""
     echo "Received interrupt signal. Exiting gracefully..."
+    # Clean up temporary files
+    rm -f "$TEMP_FILE"
     exit 0
 }
 
@@ -239,6 +342,7 @@ echo "Working directory: $(pwd)"
 echo "Git sync enabled: $ENABLE_GIT_SYNC"
 echo "Gecko repo path: $GECKO_REPO_PATH"
 echo "Custom market source: $CUSTOM_MARKET_SOURCE"
+echo "Exclude file: $EXCLUDE_FILE"
 echo ""
 
 # Main execution logic
