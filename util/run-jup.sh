@@ -184,14 +184,17 @@ while true; do
           # Check if YELLOWSTONE_XTOKEN is set
           if [ -n "$YELLOWSTONE_XTOKEN" ]; then
               echo "Starting Jupiter API with YELLOWSTONE and XTOKEN"
+              export GEYSER_STREAMING_CHUNK_COUNT=16
               RUST_LOG=info ./jupiter-swap-api --rpc-url $RPC_URL -p $LOCAL_JUPITER_PORT $MARKET_CACHE_PARAM --yellowstone-grpc-endpoint $YELLOWSTONE_URL --market-mode $MARKET_MODE --yellowstone-grpc-x-token $YELLOWSTONE_XTOKEN --expose-quote-and-simulate --enable-markets --enable-tokens --allow-circular-arbitrage --enable-new-dexes 2>&1 &
           else
               # If YELLOWSTONE_XTOKEN is not set, omit it from the command
               echo "Starting Jupiter API with YELLOWSTONE"
+              export GEYSER_STREAMING_CHUNK_COUNT=16
               RUST_LOG=info ./jupiter-swap-api --rpc-url $RPC_URL -p $LOCAL_JUPITER_PORT $MARKET_CACHE_PARAM --yellowstone-grpc-endpoint $YELLOWSTONE_URL --market-mode $MARKET_MODE --expose-quote-and-simulate --allow-circular-arbitrage --enable-markets --enable-tokens --enable-new-dexes 2>&1 &
           fi
       else
           echo "Starting Jupiter API without YELLOWSTONE"
+          export GEYSER_STREAMING_CHUNK_COUNT=16
           RUST_LOG=info ./jupiter-swap-api --rpc-url $RPC_URL -p $LOCAL_JUPITER_PORT $MARKET_CACHE_PARAM --expose-quote-and-simulate --market-mode $MARKET_MODE --allow-circular-arbitrage --enable-markets --enable-tokens --enable-new-dexes 2>&1 &
       fi
       JUPITER_PID=$!
