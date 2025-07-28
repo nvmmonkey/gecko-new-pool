@@ -78,5 +78,13 @@
       "addressLookupTableAddress": "7U2UmEFVRVoenZ4bviXLZ3eTC9wTBe3vTEHAFvKhmiQ5",
       "routingGroup": 3
     }
+  },
+  {
+    "pubkey": "AvGeFw71N5sNfV97mZ1uNrHg4yfufRicCJUrS9j2ehTX",
+    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
+    "params": {
+      "addressLookupTableAddress": "6JjsmWMgQtjUrBmA1obh4NZpc2CPqLcQ9cRPd2C5WBoM",
+      "routingGroup": 3
+    }
   }
 ]
