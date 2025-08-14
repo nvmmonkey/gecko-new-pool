@@ -8,30 +8,6 @@
     }
   },
   {
-    "pubkey": "FksffEqnBRixYGR791Qw2MgdU7zNCpHVFYBL4Fa4qVuH",
-    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
-    "params": {
-      "addressLookupTableAddress": "7U2UmEFVRVoenZ4bviXLZ3eTC9wTBe3vTEHAFvKhmiQ5",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "FAYL7CoNENA6jGCWVJb5MZ7mjKuiiyYRkDTopdVticpp",
-    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
-    "params": {
-      "addressLookupTableAddress": "H9GMeeDPzUBwbbpRw8bdcXYVzXLsv7EvHPLpEWkmgXMd",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "4ynTYgJK5ruYx3AZMRjCHrJk1qkm61fePF7dkbvRQD46",
-    "owner": "goonERTdGsjnkZqWuVjs73BZ3Pb9qoCUdBUL17BnS5j",
-    "params": {
-      "addressLookupTableAddress": "B6QgPTgp19wicoCN1VaHhnjCU98Zkg3r8ffEL6ta7gvi",
-      "routingGroup": 3
-    }
-  },
-  {
     "pubkey": "8ekCy2jHHUbW2yeNGFWYJT9Hm9FW7SvZcZK66dSZCDiF",
     "owner": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
     "params": {
@@ -44,38 +20,6 @@
     "owner": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
     "params": {
       "addressLookupTableAddress": "9AKCoNoAGYLW71TwTHY9e7KrZUWWL3c7VtHKb66NT3EV",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "4uWuh9fC7rrZKrN8ZdJf69MN1e2S7FPpMqcsyY1aof6K",
-    "owner": "goonERTdGsjnkZqWuVjs73BZ3Pb9qoCUdBUL17BnS5j",
-    "params": {
-      "addressLookupTableAddress": "B6QgPTgp19wicoCN1VaHhnjCU98Zkg3r8ffEL6ta7gvi",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "4uWuh9fC7rrZKrN8ZdJf69MN1e2S7FPpMqcsyY1aof6K",
-    "owner": "goonERTdGsjnkZqWuVjs73BZ3Pb9qoCUdBUL17BnS5j",
-    "params": {
-      "addressLookupTableAddress": "D4QBMf27hQbL2JkaM1xy5gvQavLpPyXqf4SMcEsWwg43",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "6n9VhCwQ7EwK6NqFDjnHPzEk6wZdRBTfh43RFgHQWHuQ",
-    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
-    "params": {
-      "addressLookupTableAddress": "7U2UmEFVRVoenZ4bviXLZ3eTC9wTBe3vTEHAFvKhmiQ5",
-      "routingGroup": 3
-    }
-  },
-  {
-    "pubkey": "AvGeFw71N5sNfV97mZ1uNrHg4yfufRicCJUrS9j2ehTX",
-    "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
-    "params": {
-      "addressLookupTableAddress": "6JjsmWMgQtjUrBmA1obh4NZpc2CPqLcQ9cRPd2C5WBoM",
       "routingGroup": 3
     }
   }
