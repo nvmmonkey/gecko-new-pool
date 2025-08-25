@@ -8,14 +8,6 @@
     }
   },
   {
-    "pubkey": "AVzP2GeRmqGphJsMxWoqjpUifPpCret7LqWhD8NWQK49",
-    "owner": "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu",
-    "params": {
-      "addressLookupTableAddress": "Ak38egnSBV9mHL4NUXupB6FASTyBYjt4qe4tGkcziv99",
-      "routingGroup": 3
-    }
-  },
-  {
     "pubkey": "8ekCy2jHHUbW2yeNGFWYJT9Hm9FW7SvZcZK66dSZCDiF",
     "owner": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
     "params": {
@@ -28,6 +20,14 @@
     "owner": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
     "params": {
       "addressLookupTableAddress": "9AKCoNoAGYLW71TwTHY9e7KrZUWWL3c7VtHKb66NT3EV",
+      "routingGroup": 3
+    }
+  },
+  {
+    "pubkey": "AVzP2GeRmqGphJsMxWoqjpUifPpCret7LqWhD8NWQK49",
+    "owner": "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu",
+    "params": {
+      "addressLookupTableAddress": "Ak38egnSBV9mHL4NUXupB6FASTyBYjt4qe4tGkcziv99",
       "routingGroup": 3
     }
   }
