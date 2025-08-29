@@ -31,6 +31,7 @@ TEMP_FILE="temp_filtered.json"
 sync_git_and_files() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
+
     echo "[$timestamp] Starting git sync and file updates..."
     
     if [ "$ENABLE_GIT_SYNC" = false ]; then
@@ -80,6 +81,12 @@ sync_git_and_files() {
     # Create jup directory if it doesn't exist
     mkdir -p "$JUP_DIRECTORY"
     
+    # Navigate back to jup directory
+    cd "$JUP_DIRECTORY" || {
+        echo "✗ ERROR: Failed to navigate to $JUP_DIRECTORY"
+        return 1
+    }
+    
     # Copy custom market file
     echo "Copying custom market file..."
     if cp "$CUSTOM_MARKET_SOURCE" "$JUP_DIRECTORY/$CUSTOM_FILE"; then
@@ -88,8 +95,8 @@ sync_git_and_files() {
         echo "  To: $JUP_DIRECTORY/$CUSTOM_FILE"
         
         # Validate the copied file
-        if jq empty "$JUP_DIRECTORY/$CUSTOM_FILE" 2>/dev/null; then
-            custom_count=$(jq '. | length' "$JUP_DIRECTORY/$CUSTOM_FILE")
+        if jq empty "$CUSTOM_FILE" 2>/dev/null; then
+            custom_count=$(jq '. | length' "$CUSTOM_FILE")
             echo "✓ Custom market file validation passed ($custom_count markets)"
         else
             echo "⚠ WARNING: Copied custom market file is not valid JSON"
@@ -110,40 +117,40 @@ filter_excluded_markets() {
     echo ""
     echo "Checking for excluded markets..."
     
-    # Check if exclude file exists in JUP_DIRECTORY
-    if [ ! -f "$JUP_DIRECTORY/$EXCLUDE_FILE" ]; then
-        echo "No exclude file found ($JUP_DIRECTORY/$EXCLUDE_FILE), skipping market filtering"
+    # Check if exclude file exists
+    if [ ! -f "$EXCLUDE_FILE" ]; then
+        echo "No exclude file found ($EXCLUDE_FILE), skipping market filtering"
         cp "$input_file" "$output_file"
         return 0
     fi
     
     # Validate exclude file JSON format
-    if ! jq empty "$JUP_DIRECTORY/$EXCLUDE_FILE" 2>/dev/null; then
+    if ! jq empty "$EXCLUDE_FILE" 2>/dev/null; then
         echo "✗ WARNING: Exclude file is not valid JSON, skipping market filtering"
         cp "$input_file" "$output_file"
         return 0
     fi
     
     # Check if exclude file is an array
-    if [ "$(jq -r 'type' "$JUP_DIRECTORY/$EXCLUDE_FILE")" != "array" ]; then
+    if [ "$(jq -r 'type' "$EXCLUDE_FILE")" != "array" ]; then
         echo "✗ WARNING: Exclude file must be an array of pubkeys, skipping market filtering"
         cp "$input_file" "$output_file"
         return 0
     fi
     
-    local exclude_count=$(jq '. | length' "$JUP_DIRECTORY/$EXCLUDE_FILE")
+    local exclude_count=$(jq '. | length' "$EXCLUDE_FILE")
     echo "✓ Found exclude file with $exclude_count pubkeys to filter out"
     
     # Show what pubkeys we're looking to exclude
     echo "Pubkeys to exclude:"
-    jq -r '.[] | "  - " + .' "$JUP_DIRECTORY/$EXCLUDE_FILE"
+    jq -r '.[] | "  - " + .' "$EXCLUDE_FILE"
     
     # Get count before filtering
     local before_count=$(jq '. | length' "$input_file")
     
     # Filter out excluded markets using jq
     # This creates a new array excluding any objects where .pubkey matches any value in the exclude list
-    if jq --argjson excludelist "$(cat "$JUP_DIRECTORY/$EXCLUDE_FILE")" \
+    if jq --argjson excludelist "$(cat "$EXCLUDE_FILE")" \
         'map(select(.pubkey as $pk | $excludelist | index($pk) == null))' \
         "$input_file" > "$output_file"; then
         
@@ -159,7 +166,7 @@ filter_excluded_markets() {
         if [ "$filtered_count" -gt 0 ]; then
             echo ""
             echo "Markets that were filtered out (matching exclude list):"
-            jq --argjson excludelist "$(cat "$JUP_DIRECTORY/$EXCLUDE_FILE")" -r \
+            jq --argjson excludelist "$(cat "$EXCLUDE_FILE")" -r \
                 'map(select(.pubkey as $pk | $excludelist | index($pk) != null)) | .[] | "  - \(.pubkey) (\(.owner // "unknown owner"))"' \
                 "$input_file" | head -10
             
@@ -174,7 +181,7 @@ filter_excluded_markets() {
             echo "  2. The pubkeys might be formatted incorrectly"
             echo ""
             echo "Checking if any markets contain similar pubkeys (first few characters)..."
-            for pubkey in $(jq -r '.[]' "$JUP_DIRECTORY/$EXCLUDE_FILE"); do
+            for pubkey in $(jq -r '.[]' "$EXCLUDE_FILE"); do
                 local prefix="${pubkey:0:8}"
                 local matches=$(jq -r --arg prefix "$prefix" 'map(select(.pubkey | startswith($prefix))) | length' "$input_file")
                 if [ "$matches" -gt 0 ]; then
@@ -199,15 +206,6 @@ download_and_merge_markets() {
     echo "[$timestamp] Starting market cache download and merge..."
     echo "URL: $MARKET_CACHE_URL"
     echo "Raw output: $RAW_FILE"
-
-    # Store original working directory
-    local original_wd=$(pwd)
-
-    # Navigate to JUP_DIRECTORY for file operations
-    cd "$JUP_DIRECTORY" || {
-        echo "✗ ERROR: Failed to navigate to $JUP_DIRECTORY"
-        return 1
-    }
 
     # Download the market cache to raw file
     if wget "$MARKET_CACHE_URL" -O "$RAW_FILE"; then
@@ -279,18 +277,11 @@ download_and_merge_markets() {
         echo "Creating backup for main script: $BACKUP_FILE"
         cp "$OUTPUT_FILE" "$BACKUP_FILE"
         
-        # Copy output files back to original working directory
-        echo "Copying output files to original working directory..."
-        cp "$OUTPUT_FILE" "$original_wd/"
-        cp "$BACKUP_FILE" "$original_wd/"
-        cp "$RAW_FILE" "$original_wd/"
-        
         echo ""
         echo "=== SUMMARY ==="
         echo "✓ Final market cache created: $OUTPUT_FILE"
         echo "✓ Backup created: $BACKUP_FILE"
         echo "✓ Total markets after all processing: $final_count"
-        echo "✓ Files copied to: $original_wd"
         
         # Show sample of markets (including any custom ones at the end)
         echo ""
@@ -309,14 +300,10 @@ download_and_merge_markets() {
         echo ""
         echo "Market cache is ready for use!"
         echo "Set USE_LOCAL_MARKET_CACHE=true in your environment to use it."
-        
-        # Return to original working directory
-        cd "$original_wd"
         return 0
     else
         echo "✗ ERROR: Final output file is not valid JSON!"
         rm -f "$TEMP_FILE"
-        cd "$original_wd"
         exit 1
     fi
 }
@@ -339,23 +326,28 @@ cleanup() {
     echo ""
     echo "Received interrupt signal. Exiting gracefully..."
     # Clean up temporary files
-    rm -f "$JUP_DIRECTORY/$TEMP_FILE"
+    rm -f "$TEMP_FILE"
     exit 0
 }
 
 # Set up signal trap
 trap cleanup SIGINT SIGTERM
 
-# Ensure jup directory exists
-mkdir -p "$JUP_DIRECTORY"
+# Ensure we're in the correct directory
+cd "$JUP_DIRECTORY" || {
+    echo "Creating jup directory: $JUP_DIRECTORY"
+    mkdir -p "$JUP_DIRECTORY"
+    cd "$JUP_DIRECTORY" || {
+        echo "✗ ERROR: Failed to create or navigate to $JUP_DIRECTORY"
+        exit 1
+    }
+}
 
 echo "Working directory: $(pwd)"
-echo "Output directory: $(pwd)"
-echo "Jup directory: $JUP_DIRECTORY"
 echo "Git sync enabled: $ENABLE_GIT_SYNC"
 echo "Gecko repo path: $GECKO_REPO_PATH"
 echo "Custom market source: $CUSTOM_MARKET_SOURCE"
-echo "Exclude file: $JUP_DIRECTORY/$EXCLUDE_FILE"
+echo "Exclude file: $EXCLUDE_FILE"
 echo ""
 
 # Main execution logic
