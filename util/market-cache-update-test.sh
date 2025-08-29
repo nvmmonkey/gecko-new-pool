@@ -69,6 +69,10 @@ sync_git_and_files() {
         cp ~/gecko-new-pool/util/exclude_market.json ~/jup
         cp ~/gecko-new-pool/util/only_market.json ~/jup
         cp ~/gecko-new-pool/util/only_custom_market.json ~/jup
+        # Also copy files to original working directory
+        cp ~/gecko-new-pool/util/exclude_market.json "$ORIGINAL_WD/"
+        cp ~/gecko-new-pool/util/only_market.json "$ORIGINAL_WD/"
+        cp ~/gecko-new-pool/util/only_custom_market.json "$ORIGINAL_WD/"
         echo "✓ Git sync completed successfully"
         echo "✓ Using original files from GitHub"
     else
@@ -87,22 +91,22 @@ sync_git_and_files() {
     # Create jup directory if it doesn't exist
     mkdir -p "$JUP_DIRECTORY"
     
-    # Navigate back to jup directory
-    cd "$JUP_DIRECTORY" || {
-        echo "✗ ERROR: Failed to navigate to $JUP_DIRECTORY"
+    # Navigate back to original working directory for file operations
+    cd "$ORIGINAL_WD" || {
+        echo "✗ ERROR: Failed to navigate back to original working directory"
         return 1
     }
     
-    # Copy custom market file
+    # Copy custom market file to original directory
     echo "Copying custom market file..."
-    if cp "$CUSTOM_MARKET_SOURCE" "$JUP_DIRECTORY/$CUSTOM_FILE"; then
+    if cp "$CUSTOM_MARKET_SOURCE" "$ORIGINAL_WD/$CUSTOM_FILE"; then
         echo "✓ Custom market file copied successfully"
         echo "  From: $CUSTOM_MARKET_SOURCE"
-        echo "  To: $JUP_DIRECTORY/$CUSTOM_FILE"
+        echo "  To: $ORIGINAL_WD/$CUSTOM_FILE"
         
         # Validate the copied file
-        if jq empty "$CUSTOM_FILE" 2>/dev/null; then
-            custom_count=$(jq '. | length' "$CUSTOM_FILE")
+        if jq empty "$ORIGINAL_WD/$CUSTOM_FILE" 2>/dev/null; then
+            custom_count=$(jq '. | length' "$ORIGINAL_WD/$CUSTOM_FILE")
             echo "✓ Custom market file validation passed ($custom_count markets)"
         else
             echo "⚠ WARNING: Copied custom market file is not valid JSON"
@@ -472,14 +476,16 @@ cleanup() {
 # Set up signal trap
 trap cleanup SIGINT SIGTERM
 
-# Ensure we're in the correct directory
-cd "$JUP_DIRECTORY" || {
-    echo "Creating jup directory: $JUP_DIRECTORY"
-    mkdir -p "$JUP_DIRECTORY"
-    cd "$JUP_DIRECTORY" || {
-        echo "✗ ERROR: Failed to create or navigate to $JUP_DIRECTORY"
-        exit 1
-    }
+# Store the original working directory
+ORIGINAL_WD=$(pwd)
+
+# Create jup directory if it doesn't exist, but stay in original directory
+mkdir -p "$JUP_DIRECTORY"
+
+# Ensure we're in the original directory for output files
+cd "$ORIGINAL_WD" || {
+    echo "✗ ERROR: Failed to return to original working directory"
+    exit 1
 }
 
 echo "Working directory: $(pwd)"
