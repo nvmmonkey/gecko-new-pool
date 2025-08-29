@@ -91,7 +91,7 @@ sync_git_and_files() {
     cd "$JUP_DIRECTORY" || {
         echo "✗ ERROR: Failed to navigate to $JUP_DIRECTORY"
         return 1
-    fi
+    }
     
     # Copy custom market file
     echo "Copying custom market file..."
