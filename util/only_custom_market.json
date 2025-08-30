@@ -1,5 +1,13 @@
 [
   {
+    "pubkey": "65ZHSArs5XxPseKQbB1B4r16vDxMWnCxHMzogDAqiDUc",
+    "owner": "SV2EYYJyRz2YhfXwXnhNAevDEui5Q6yrfyo13WtupPF",
+    "params": {
+      "addressLookupTableAddress": "3bDh8FpfSZezpiwfKZZJXFKHyoCBqu4LfQaf8Xo3kvJX",
+      "routingGroup": 3
+    }
+  },
+  {
     "pubkey": "HvtYZ3e8JPhy7rm6kvWVB2jJUddyytkLcwTMSSnB7T3U",
     "owner": "2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c",
     "params": {
