@@ -1,13 +1,5 @@
 [
   {
-    "pubkey": "5BUwFW4nRbftYTDMbgxykoFWqWHPzahFSNAaaaJtVKsq",
-    "owner": "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu",
-    "params": {
-      "addressLookupTableAddress": "Ak38egnSBV9mHL4NUXupB6FASTyBYjt4qe4tGkcziv99",
-      "routingGroup": 3
-    }
-  },
-  {
     "pubkey": "8ekCy2jHHUbW2yeNGFWYJT9Hm9FW7SvZcZK66dSZCDiF",
     "owner": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
     "params": {
