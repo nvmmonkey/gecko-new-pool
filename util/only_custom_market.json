@@ -184,14 +184,6 @@
     }
   },
   {
-    "pubkey": "DH4xmaWDnTzKXehVaPSNy9tMKJxnYL5Mo5U3oTHFtNYJ",
-    "owner": "SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe",
-    "params": {
-      "addressLookupTableAddress": "7KYzjjTydKxCSrjD3M3A2ntqKWtiGZszVX3ubA1FZcf5",
-      "routingGroup": 3
-    }
-  },
-  {
     "pubkey": "3AbG3ZA19fJKjTSTMTCz7j2bodPagXog4PwTBi8H7UA4",
     "owner": "SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe",
     "params": {
