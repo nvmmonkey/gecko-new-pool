@@ -456,6 +456,14 @@
     }
   },
   {
+    "pubkey": "255yZgB55uNqQyLccUpoRbWV1jiG3MtBQRhxETWAHmu4",
+    "owner": "opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb",
+    "params": {
+      "addressLookupTableAddress": "HL8UMm7yHwPrKtDa6tJRLbCDf2ArntqBwUWtrU6CAm13",
+      "routingGroup": 3
+    }
+  },
+  {
     "pubkey": "DB3sUCP2H4icbeKmK6yb6nUxU5ogbcRHtGuq7W2RoRwW",
     "owner": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
     "params": {
