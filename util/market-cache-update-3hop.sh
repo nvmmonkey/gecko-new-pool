@@ -67,12 +67,12 @@ sync_git_and_files() {
         cp ~/gecko-new-pool/util/run-jup.sh ~/jup
         cp ~/gecko-new-pool/util/custom_market.json ~/jup
         cp ~/gecko-new-pool/util/exclude_market.json ~/jup
-        cp ~/gecko-new-pool/util/only_market.json ~/jup
-        cp ~/gecko-new-pool/util/only_custom_market.json ~/jup
+        cp ~/gecko-new-pool/util/only_market_3hop.json ~/jup
+        cp ~/gecko-new-pool/util/only_custom_market_3hop.json ~/jup
         # Also copy files to original working directory
         cp ~/gecko-new-pool/util/exclude_market.json "$ORIGINAL_WD/"
-        cp ~/gecko-new-pool/util/only_market.json "$ORIGINAL_WD/"
-        cp ~/gecko-new-pool/util/only_custom_market.json "$ORIGINAL_WD/"
+        cp ~/gecko-new-pool/util/only_market_3hop.json "$ORIGINAL_WD/"
+        cp ~/gecko-new-pool/util/only_custom_market_3hop.json "$ORIGINAL_WD/"
         echo "✓ Git sync completed successfully"
         echo "✓ Using original files from GitHub"
     else
