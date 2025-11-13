@@ -2072,19 +2072,42 @@ no_failure_mode = true
 use_separate_tip_account = true
 block_engine_strategy = "AllAtOnce"
 
+[[sending_venders.sending_vender]]
+enabled = false
+tip_amount = { strategy = "Random", from = 1_000_000, to = 1_000_000, count = 1 }
+compute_unit_price = { strategy = "Random", from = 1031, to = 2055, count = 1 }
+urls = [
+    "https://fast.circular.fi/transactions",
+]
+auth_header = "x-api-key"
+auth_value = "xxx"
+tip_accounts = [
+  "FAST3dMFZvESiEipBvLSiXq3QCV51o3xuoHScqRU6cB6",
+  "FASTHPW6akdGh9PFSdhMTbCuGkCSX7LsUjjnaB2RTQ4v",
+  "FASTYKWXRfAoty7SQCM1mGVrmPUyyNcF4tc3DUkLDAu9",
+  "FASTPB76TxKPMZ7Q29m8v4zJn8gUjbWyvTEQaaxhwN7M",
+  "FASTs6ctgbsuZegMzUs4DPUYhRSZUPCjgCVnttHbpQAp",
+  "FASTYmSidNfLwdwiQEhCTtzghxEtaipeNSDSwh9xDPs3",
+  "FASTCKnwwY6iL3CknRgg3Zqir7jeagDDhxSnBQQy5a1C",
+  "FASTKL1AamNKrwnvbKwo4PU8434BBdqVrTtugM6oDU71"
+]
+no_failure_mode = false
+sending_strategy = "AllAtOnce"  # AllAtOnce or OneByOne
+
 [jito.tip_config]
 strategy = "Random"
 from = 5000
 to = 25500
 count = 1
 
-[kamino_flashloan]
+[flashloan]
 enabled = false
 
 [bot]
 base_mint = "So11111111111111111111111111111111111111112" # Optional, default to SOL
 compute_unit_limit = 598_000
 merge_mints = false
+skip_ata_creation = false
 
 [wallet]
 `;
