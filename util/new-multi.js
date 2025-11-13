@@ -2072,6 +2072,37 @@ no_failure_mode = true
 use_separate_tip_account = true
 block_engine_strategy = "AllAtOnce"
 
+[routing.circular_api]
+enabled = true
+refresh_interval_secs = 5
+enable_sol_pool = true
+enable_usdc_pool = true
+enable_usd1_pool = true
+# api_key = "" # Optional. An additional 5% fee will apply when using without a key
+
+max_tokens_list = 2
+max_time_range = 300
+threshold_max_time_range = 300
+
+min_profit_token = 500
+min_transactions_token = 5
+min_profit_pool = 100
+
+threshold_amount = 100
+threshold_provider = "ALL"
+fees_percentiles = "p75"
+tips_percentiles = "p90"
+# Default routing metadata for generated mint configs
+default_process_delay = 400
+amm = [
+  { address = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo", max_pools_list = 4 },
+  { address = "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG", max_pools_list = 2 },
+  { address = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", max_pools_list = 2 },
+  { address = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C", max_pools_list = 2 },
+  { address = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", max_pools_list = 2 },
+]
+exclude_tokens = ["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"]
+
 [[sending_venders.sending_vender]]
 enabled = false
 tip_amount = { strategy = "Random", from = 1_000_000, to = 1_000_000, count = 1 }
