@@ -2140,6 +2140,10 @@ compute_unit_limit = 598_000
 merge_mints = false
 skip_ata_creation = false
 
+[log]
+enable_sending_log_summary = true
+summary_interval_seconds = 10
+
 [auto_rebalance]
 min_sol_balance = 8_000_000_000 # 1 SOL
 min_wsol_balance = 1            # 0.000000001 SOL
